@@ -1,0 +1,2076 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>日文單字複習</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0e17;
+  --surface: #1a1929;
+  --surface2: #252440;
+  --surface3: #2e2c50;
+  --accent: #e8a87c;
+  --accent2: #9b8ef7;
+  --accent3: #6de8c4;
+  --danger: #f76e6e;
+  --text: #fffffe;
+  --text2: #a7a5c0;
+  --text3: #6b6987;
+  --border: rgba(255,255,255,0.07);
+  --nav-bg: rgba(15,14,23,0.85);
+  --radius: 16px;
+  --radius-sm: 8px;
+}
+:root.light {
+  --bg: #f5f4f0;
+  --surface: #ffffff;
+  --surface2: #eeecf8;
+  --surface3: #e4e1f5;
+  --accent: #c4792a;
+  --accent2: #6c5ce7;
+  --accent3: #00a884;
+  --danger: #d94f4f;
+  --text: #1a1929;
+  --text2: #5a5870;
+  --text3: #9896b0;
+  --border: rgba(0,0,0,0.08);
+  --nav-bg: rgba(245,244,240,0.88);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* BG decoration */
+.bg-orb {
+  position: fixed; border-radius: 50%;
+  filter: blur(80px); pointer-events: none; z-index: 0;
+}
+.bg-orb.a { width: 300px; height: 300px; background: rgba(155,142,247,0.12); top: -80px; right: -80px; }
+.bg-orb.b { width: 200px; height: 200px; background: rgba(232,168,124,0.10); bottom: 100px; left: -60px; }
+
+/* NAV */
+nav {
+  position: sticky; top: 0; z-index: 50;
+  padding: 14px 20px;
+  background: var(--nav-bg);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.nav-brand { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+.nav-brand span { color: var(--accent2); font-family: 'Noto Serif JP', serif; }
+.nav-right { display: flex; gap: 8px; align-items: center; }
+.streak-badge {
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(232,168,124,0.15);
+  border: 1px solid rgba(232,168,124,0.25);
+  border-radius: 20px; padding: 4px 10px;
+  font-size: 13px; font-weight: 500; color: var(--accent);
+}
+.streak-badge .fire { font-size: 14px; }
+
+/* TABS */
+.tabs {
+  display: flex; padding: 12px 16px; gap: 6px;
+  position: sticky; top: 57px; z-index: 40;
+  background: var(--nav-bg); backdrop-filter: blur(12px);
+}
+.tab-btn {
+  flex: 1; padding: 8px 4px; border: none; cursor: pointer;
+  border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif;
+  font-size: 12px; font-weight: 500; letter-spacing: 0.3px;
+  background: var(--surface); color: var(--text2);
+  transition: all 0.2s;
+}
+.tab-btn.active { background: var(--accent2); color: #fff; }
+.tab-btn:hover:not(.active) { background: var(--surface2); color: var(--text); }
+
+/* CONTENT */
+.content { flex: 1; padding: 16px; position: relative; z-index: 1; }
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* STATS ROW */
+.stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 16px; }
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 12px; text-align: center;
+}
+.stat-val { font-size: 24px; font-weight: 600; font-family: 'DM Mono', monospace; }
+.stat-label { font-size: 11px; color: var(--text2); margin-top: 3px; }
+.stat-card.accent1 .stat-val { color: var(--accent); }
+.stat-card.accent2 .stat-val { color: var(--accent2); }
+.stat-card.accent3 .stat-val { color: var(--accent3); }
+
+/* FLASHCARD */
+.card-area { perspective: 1000px; margin-bottom: 20px; }
+.flashcard {
+  width: 100%; height: 220px; position: relative;
+  transform-style: preserve-3d; transition: transform 0.55s cubic-bezier(.4,0,.2,1);
+  cursor: pointer;
+}
+.flashcard.flipped { transform: rotateY(180deg); }
+.card-face {
+  position: absolute; inset: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  backface-visibility: hidden;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 10px;
+}
+.card-face.back { transform: rotateY(180deg); background: var(--surface2); }
+.card-kanji { font-family: 'Noto Serif JP', serif; font-size: 52px; color: var(--text); line-height: 1; }
+.card-hira { font-family: 'Noto Serif JP', serif; font-size: 18px; color: var(--accent2); }
+.card-meaning { font-size: 52px; font-weight: 500; color: var(--accent); line-height: 1; }
+.card-example { font-size: 12px; color: var(--text2); text-align: center; line-height: 1.6; max-width: 300px; }
+.card-tag {
+  position: absolute; top: 14px; left: 14px;
+  font-size: 10px; letter-spacing: 1px; color: var(--text3); font-weight: 600;
+}
+.tap-hint { font-size: 11px; color: var(--text3); text-align: center; margin-bottom: 12px; }
+.card-actions { display: flex; gap: 10px; }
+.card-btn {
+  flex: 1; padding: 12px; border: none; border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s;
+}
+.card-btn.hard { background: rgba(247,110,110,0.15); color: var(--danger); border: 1px solid rgba(247,110,110,0.25); }
+.card-btn.ok   { background: rgba(155,142,247,0.15); color: var(--accent2); border: 1px solid rgba(155,142,247,0.25); }
+.card-btn.easy { background: rgba(109,232,196,0.15); color: var(--accent3); border: 1px solid rgba(109,232,196,0.25); }
+.card-btn:hover { filter: brightness(1.2); transform: translateY(-1px); }
+.card-btn:active { transform: scale(0.97); }
+.card-counter { text-align: center; font-size: 12px; color: var(--text3); margin-bottom: 12px; }
+
+/* PROGRESS BAR */
+.progress-bar { height: 3px; background: var(--surface2); border-radius: 2px; margin-bottom: 16px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent3)); border-radius: 2px; transition: width 0.4s ease; }
+
+/* AUDIO BTN */
+.audio-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: none; border: 1px solid var(--border);
+  border-radius: 20px; padding: 5px 12px;
+  color: var(--text2); font-size: 12px; cursor: pointer;
+  transition: all 0.15s; font-family: 'DM Sans', sans-serif;
+}
+.audio-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+.audio-row { display: flex; justify-content: center; margin-top: 6px; }
+
+/* QUIZ */
+.quiz-q {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px 24px; text-align: center; margin-bottom: 16px;
+}
+.quiz-word { font-family: 'Noto Serif JP', serif; font-size: 48px; margin-bottom: 6px; }
+.quiz-hira { font-size: 16px; color: var(--accent2); font-family: 'Noto Serif JP', serif; }
+.quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.quiz-opt {
+  padding: 14px 10px; border: 1px solid var(--border);
+  background: var(--surface); border-radius: var(--radius-sm);
+  font-size: 14px; cursor: pointer; text-align: center;
+  transition: all 0.15s; font-family: 'DM Sans', sans-serif; color: var(--text);
+}
+.quiz-opt:hover:not(.disabled) { border-color: var(--accent2); background: var(--surface2); }
+.quiz-opt.correct { background: rgba(109,232,196,0.15); border-color: var(--accent3); color: var(--accent3); }
+.quiz-opt.wrong { background: rgba(247,110,110,0.12); border-color: var(--danger); color: var(--danger); }
+.quiz-opt.disabled { cursor: default; }
+.quiz-result {
+  text-align: center; padding: 14px;
+  border-radius: var(--radius-sm); margin-top: 12px;
+  font-size: 14px; font-weight: 500;
+}
+.quiz-result.correct { background: rgba(109,232,196,0.12); color: var(--accent3); }
+.quiz-result.wrong { background: rgba(247,110,110,0.1); color: var(--danger); }
+.quiz-next-btn {
+  width: 100%; margin-top: 12px; padding: 13px;
+  background: var(--accent2); color: #fff; border: none;
+  border-radius: var(--radius-sm); font-size: 14px; font-weight: 500;
+  cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+}
+.quiz-next-btn:hover { background: #8a7df0; }
+
+/* WORD LIST */
+.word-list { display: flex; flex-direction: column; gap: 8px; }
+.word-item {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px 14px;
+}
+.word-jp { font-family: 'Noto Serif JP', serif; font-size: 20px; min-width: 48px; }
+.word-info { flex: 1; }
+.word-hira { font-size: 12px; color: var(--accent2); }
+.word-zh { font-size: 14px; color: var(--text2); margin-top: 2px; }
+.word-srs { font-size: 10px; margin-top: 4px; }
+.srs-easy { color: var(--accent3); }
+.srs-ok   { color: var(--accent2); }
+.srs-hard { color: var(--danger); }
+.word-del {
+  background: none; border: none; color: var(--text3);
+  cursor: pointer; font-size: 16px; padding: 4px; line-height: 1;
+  transition: color 0.15s;
+}
+.word-del:hover { color: var(--danger); }
+
+/* ADD WORD */
+.add-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
+}
+.add-form h3 { font-size: 14px; color: var(--text2); margin-bottom: 14px; font-weight: 500; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.form-input {
+  padding: 10px 12px; background: var(--bg);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--text); font-size: 14px; font-family: 'DM Sans', sans-serif;
+  outline: none; transition: border-color 0.15s; width: 100%;
+}
+.form-input::placeholder { color: var(--text3); }
+.form-input:focus { border-color: var(--accent2); }
+.form-input.full { grid-column: 1/-1; }
+.add-btn {
+  width: 100%; padding: 11px; background: var(--accent2);
+  color: #fff; border: none; border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 500; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; transition: background 0.15s;
+  margin-top: 4px;
+}
+.add-btn:hover { background: #8a7df0; }
+
+/* PROGRESS SCREEN */
+.prog-section { margin-bottom: 20px; }
+.prog-section h3 { font-size: 13px; color: var(--text2); font-weight: 500; margin-bottom: 10px; letter-spacing: 0.5px; }
+.heatmap { display: grid; grid-template-columns: repeat(14, 1fr); gap: 3px; }
+.heat-cell {
+  aspect-ratio: 1; border-radius: 3px; background: var(--surface2);
+}
+.heat-cell.l1 { background: rgba(155,142,247,0.2); }
+.heat-cell.l2 { background: rgba(155,142,247,0.45); }
+.heat-cell.l3 { background: rgba(155,142,247,0.7); }
+.heat-cell.l4 { background: rgba(155,142,247,1); }
+.srs-bars { display: flex; flex-direction: column; gap: 8px; }
+.srs-bar-row { display: flex; align-items: center; gap: 10px; }
+.srs-bar-label { font-size: 12px; color: var(--text2); width: 60px; flex-shrink: 0; }
+.srs-bar-track { flex: 1; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+.srs-bar-fill { height: 100%; border-radius: 4px; }
+.srs-bar-count { font-size: 12px; color: var(--text2); font-family: 'DM Mono', monospace; width: 24px; text-align: right; }
+.chart-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 80px; }
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.bar-fill { width: 100%; background: var(--accent2); border-radius: 3px 3px 0 0; min-height: 3px; transition: height 0.3s; }
+.bar-day { font-size: 9px; color: var(--text3); }
+
+/* SECTION HEADER */
+.section-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.section-title { font-size: 15px; font-weight: 600; }
+.section-sub { font-size: 12px; color: var(--text2); }
+
+/* EMPTY STATE */
+.empty { text-align: center; padding: 40px 20px; color: var(--text3); font-size: 14px; }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 20px; padding: 10px 20px;
+  font-size: 13px; color: var(--text); z-index: 999;
+  opacity: 0; transition: all 0.3s; pointer-events: none; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* MODE TOGGLE */
+.mode-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
+.mode-btn {
+  flex: 1; padding: 8px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text2); font-size: 12px; font-weight: 500; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+}
+.mode-btn.active { background: var(--accent2); color: #fff; border-color: var(--accent2); }
+
+.quick-time-btn {
+  padding: 5px 10px; border-radius: 20px; border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text2); font-size: 11px;
+  cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+}
+.quick-time-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+.news-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.news-card:hover { border-color: var(--surface3); }
+.news-date {
+  font-size: 10px; color: var(--text3); letter-spacing: 0.5px;
+  font-weight: 600; padding: 12px 14px 0;
+}
+.news-title {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 16px; line-height: 1.7; color: var(--text);
+  padding: 8px 14px 12px; cursor: pointer;
+  display: block; text-decoration: none;
+}
+.news-title:hover { color: var(--accent2); }
+.news-body {
+  display: none; padding: 0 14px 14px;
+  font-family: 'Noto Serif JP', serif;
+  font-size: 14px; line-height: 1.9; color: var(--text2);
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.news-body.open { display: block; }
+.news-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-top: 1px solid var(--border);
+  gap: 8px;
+}
+.news-link {
+  font-size: 12px; color: var(--accent2); text-decoration: none;
+  display: flex; align-items: center; gap: 4px;
+}
+.news-link:hover { text-decoration: underline; }
+.news-add-word-btn {
+  font-size: 12px; color: var(--accent3); background: rgba(109,232,196,0.1);
+  border: 1px solid rgba(109,232,196,0.2); border-radius: 20px;
+  padding: 4px 12px; cursor: pointer; font-family: 'DM Sans',sans-serif;
+  transition: all 0.15s;
+}
+.news-add-word-btn:hover { background: rgba(109,232,196,0.2); }
+.news-tag {
+  display: inline-block; font-size: 10px; padding: 2px 8px;
+  background: rgba(155,142,247,0.12); color: var(--accent2);
+  border-radius: 10px; margin: 0 14px 8px; font-weight: 500;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
+
+/* SPLASH SCREEN */
+#splash {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0;
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+#splash.hide {
+  opacity: 0; transform: scale(1.04); pointer-events: none;
+}
+.splash-orb {
+  position: absolute; border-radius: 50%; pointer-events: none;
+  filter: blur(90px);
+}
+.splash-orb.a { width: 360px; height: 360px; background: rgba(155,142,247,0.18); top: -80px; right: -80px; }
+.splash-orb.b { width: 280px; height: 280px; background: rgba(232,168,124,0.13); bottom: 60px; left: -80px; }
+.splash-orb.c { width: 200px; height: 200px; background: rgba(109,232,196,0.10); top: 40%; left: 30%; }
+
+.splash-logo {
+  width: 100px; height: 100px; border-radius: 28px;
+  background: linear-gradient(135deg, #2a2650 0%, #1a1929 100%);
+  border: 1px solid rgba(155,142,247,0.3);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 28px;
+  box-shadow: 0 0 0 12px rgba(155,142,247,0.06), 0 0 0 24px rgba(155,142,247,0.03);
+  animation: splashPulse 2.4s ease-in-out infinite;
+}
+@keyframes splashPulse {
+  0%, 100% { box-shadow: 0 0 0 12px rgba(155,142,247,0.06), 0 0 0 24px rgba(155,142,247,0.03); }
+  50%       { box-shadow: 0 0 0 16px rgba(155,142,247,0.10), 0 0 0 32px rgba(155,142,247,0.05); }
+}
+.splash-logo-char {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 52px; font-weight: 700;
+  background: linear-gradient(135deg, #c4b8ff, #9b8ef7);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  line-height: 1;
+}
+.splash-title {
+  font-size: 28px; font-weight: 600; letter-spacing: -0.5px;
+  color: var(--text); margin-bottom: 8px; text-align: center;
+}
+.splash-title span { color: var(--accent2); font-family: 'Noto Serif JP', serif; }
+.splash-sub {
+  font-size: 14px; color: var(--text2); margin-bottom: 52px; text-align: center;
+  letter-spacing: 0.2px;
+}
+.splash-version {
+  position: absolute; bottom: 32px;
+  font-size: 11px; color: var(--text3); letter-spacing: 0.5px;
+}
+.splash-kana-row {
+  display: flex; gap: 18px; margin-bottom: 36px;
+  font-family: 'Noto Serif JP', serif;
+}
+.splash-kana {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: var(--surface); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; color: var(--text2);
+  animation: kanaFloat 3s ease-in-out infinite;
+}
+.splash-kana:nth-child(2) { animation-delay: 0.3s; color: var(--accent2); }
+.splash-kana:nth-child(3) { animation-delay: 0.6s; }
+.splash-kana:nth-child(4) { animation-delay: 0.9s; color: var(--accent); }
+.splash-kana:nth-child(5) { animation-delay: 1.2s; }
+@keyframes kanaFloat {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+.splash-version {
+  position: absolute; bottom: 32px;
+  font-size: 11px; color: var(--text3); letter-spacing: 0.5px;
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH SCREEN -->
+<div id="splash">
+  <div class="splash-orb a"></div>
+  <div class="splash-orb b"></div>
+  <div class="splash-orb c"></div>
+
+  <div class="splash-logo">
+    <span class="splash-logo-char">日</span>
+  </div>
+
+  <div class="splash-title"><span>単語帳</span> · 日文複習</div>
+  <div class="splash-sub">用間隔記憶法，輕鬆記住日文單字</div>
+
+  <div class="splash-kana-row">
+    <div class="splash-kana">あ</div>
+    <div class="splash-kana">語</div>
+    <div class="splash-kana">い</div>
+    <div class="splash-kana">学</div>
+    <div class="splash-kana">う</div>
+  </div>
+
+  <div class="splash-version">間隔複習 · 測驗模式</div>
+</div>
+
+<div class="app" id="main-app" style="opacity:0; transition: opacity 0.4s ease 0.1s;">
+  <div class="bg-orb a"></div>
+  <div class="bg-orb b"></div>
+
+  <nav>
+    <div class="nav-brand"><span>日</span>単語帳</div>
+    <div class="nav-right">
+      <button id="theme-toggle" onclick="toggleTheme()" title="切換亮暗色" style="
+        background: var(--surface2); border: 1px solid var(--border);
+        border-radius: 20px; padding: 5px 10px; cursor: pointer;
+        font-size: 15px; line-height: 1; transition: all 0.2s;
+      " id="theme-toggle">🌙</button>
+      <div class="streak-badge"><span class="fire">🔥</span><span id="streak-num">0</span> 天</div>
+    </div>
+  </nav>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('flash')">翻卡</button>
+    <button class="tab-btn" onclick="switchTab('quiz')">測驗</button>
+    <button class="tab-btn" onclick="switchTab('news')">進階練習</button>
+    <button class="tab-btn" onclick="switchTab('words')">單字庫</button>
+    <button class="tab-btn" onclick="switchTab('progress')">進度</button>
+  </div>
+
+  <div class="content">
+    <!-- FLASHCARD -->
+    <div class="screen active" id="tab-flash">
+      <div class="stats-row">
+        <div class="stat-card accent1">
+          <div class="stat-val" id="fc-total">0</div>
+          <div class="stat-label">總單字</div>
+        </div>
+        <div class="stat-card accent2">
+          <div class="stat-val" id="fc-today">0</div>
+          <div class="stat-label">今日學習</div>
+        </div>
+        <div class="stat-card accent3">
+          <div class="stat-val" id="fc-due">0</div>
+          <div class="stat-label">待複習</div>
+        </div>
+      </div>
+
+      <div class="progress-bar"><div class="progress-fill" id="fc-progress" style="width:0%"></div></div>
+      <p class="card-counter" id="fc-counter">卡片 0 / 0</p>
+
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="mode-jp" onclick="setCardMode('jp')">日文正面 → 中文背面</button>
+        <button class="mode-btn" id="mode-zh" onclick="setCardMode('zh')">中文正面 → 日文背面</button>
+      </div>
+
+      <div class="card-area" id="card-area" onclick="flipCard()">
+        <div class="flashcard" id="flashcard">
+          <div class="card-face front">
+            <div class="card-tag" id="fc-front-tag">正面 — 日文</div>
+            <div class="card-kanji" id="fc-front-main">—</div>
+            <div class="card-hira" id="fc-front-sub"></div>
+            <div class="audio-row" id="fc-audio-row">
+              <button class="audio-btn" onclick="speakWord(event)">
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path d="M11 3a1 1 0 0 0-1.447-.894L4.618 5H3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h1.618l4.935 2.894A1 1 0 0 0 11 17V3zM15.293 7.293a1 1 0 0 1 1.414 1.414L15.414 10l1.293 1.293a1 1 0 0 1-1.414 1.414L14 11.414l-1.293 1.293a1 1 0 0 1-1.414-1.414L12.586 10l-1.293-1.293a1 1 0 0 1 1.414-1.414L14 8.586l1.293-1.293z"/></svg>
+                發音
+              </button>
+            </div>
+          </div>
+          <div class="card-face back">
+            <div class="card-tag" id="fc-back-tag">背面 — 中文</div>
+            <div class="card-meaning" id="fc-back-main">—</div>
+            <div class="card-hira" id="fc-back-sub" style="font-size:14px;color:var(--accent2)"></div>
+            <div class="card-example" id="fc-example"></div>
+            <div class="card-example" id="fc-example-zh" style="display:none"></div>
+          </div>
+        </div>
+      </div>
+
+      <p class="tap-hint">點擊卡片翻面</p>
+      <div class="card-actions" id="card-actions" style="display:none">
+        <button class="card-btn hard" onclick="rateCard('hard')">😓 難</button>
+        <button class="card-btn ok"   onclick="rateCard('ok')">🤔 普通</button>
+        <button class="card-btn easy" onclick="rateCard('easy')">😊 簡單</button>
+      </div>
+      <div id="fc-done" style="display:none; text-align:center; padding:24px; color:var(--accent3); font-size:15px;">
+        🎉 今日複習完成！
+      </div>
+    </div>
+
+    <!-- QUIZ -->
+    <div class="screen" id="tab-quiz">
+      <div class="stats-row">
+        <div class="stat-card accent1">
+          <div class="stat-val" id="qz-correct">0</div>
+          <div class="stat-label">答對</div>
+        </div>
+        <div class="stat-card accent3">
+          <div class="stat-val" id="qz-total-q">0</div>
+          <div class="stat-label">已作答</div>
+        </div>
+        <div class="stat-card accent2">
+          <div class="stat-val" id="qz-acc">—</div>
+          <div class="stat-label">正確率</div>
+        </div>
+      </div>
+
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="qz-mode-jp" onclick="setQuizMode('jp')">看日文答中文</button>
+        <button class="mode-btn" id="qz-mode-zh" onclick="setQuizMode('zh')">看中文答日文</button>
+      </div>
+
+      <div class="quiz-q">
+        <div class="quiz-word" id="qz-word">—</div>
+        <div class="quiz-hira" id="qz-hira"></div>
+      </div>
+
+      <div class="quiz-options" id="qz-options"></div>
+      <div class="quiz-result" id="qz-result" style="display:none"></div>
+      <button class="quiz-next-btn" id="qz-next" onclick="nextQuiz()" style="display:none">下一題 →</button>
+    </div>
+
+    <!-- NEWS -->
+    <div class="screen" id="tab-news">
+      <div class="section-hdr" style="margin-bottom:4px">
+        <span class="section-title">進階練習</span>
+        <button onclick="newsLoaded=false;loadNews()" style="background:none;border:none;color:var(--accent2);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;">↻ 重新整理</button>
+      </div>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:10px">閱讀全文 → 填入翻譯筆記 → 挑出想記的單字</p>
+
+      <div class="mode-toggle" style="margin-bottom:14px">
+        <button class="mode-btn active" id="news-mode-easy" onclick="setNewsLevel('easy')">🟢 簡單 — やさしい日本語</button>
+        <button class="mode-btn" id="news-mode-hard" onclick="setNewsLevel('hard')">🔴 進階 — NHK Web</button>
+      </div>
+
+      <div id="news-loading" style="text-align:center;padding:40px 0;color:var(--text3);font-size:14px">載入新聞中…</div>
+      <div id="news-list" style="display:flex;flex-direction:column;gap:16px"></div>
+
+      <!-- Add word from news modal -->
+      <div id="news-add-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.7);align-items:flex-end;justify-content:center">
+        <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px;width:100%;max-width:480px;border-top:1px solid var(--border)">
+          <div style="font-size:13px;color:var(--text2);margin-bottom:4px;font-weight:500">加入單字庫</div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:14px" id="nm-source-label"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <input class="form-input" id="nm-kanji" placeholder="漢字">
+            <input class="form-input" id="nm-hira" placeholder="平假名">
+          </div>
+          <input class="form-input" id="nm-meaning" placeholder="中文意思" style="width:100%;margin-bottom:10px">
+          <input class="form-input" id="nm-example" placeholder="例句（可留空）" style="width:100%;margin-bottom:14px">
+          <div style="display:flex;gap:8px">
+            <button onclick="closeNewsModal()" style="flex:1;padding:11px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif">取消</button>
+            <button onclick="saveNewsWord()" style="flex:2;padding:11px;background:var(--accent2);border:none;border-radius:var(--radius-sm);color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif">＋ 加入單字庫</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WORDS -->
+    <div class="screen" id="tab-words">
+      <div class="add-form">
+        <h3>新增單字</h3>
+        <div class="form-row">
+          <input class="form-input" id="in-kanji" placeholder="漢字 (水)">
+          <input class="form-input" id="in-hira" placeholder="平假名 (みず)">
+        </div>
+        <div class="form-row">
+          <input class="form-input full" id="in-meaning" placeholder="中文意思 (水)">
+        </div>
+        <input class="form-input full" id="in-example" placeholder="例句 (水を飲む — 喝水)" style="margin-bottom:10px">
+        <button class="add-btn" onclick="addWord()">＋ 新增</button>
+      </div>
+
+      <div class="section-hdr">
+        <span class="section-title">單字庫</span>
+        <span class="section-sub" id="word-count">0 個</span>
+      </div>
+      <input class="form-input" id="word-search" placeholder="🔍 搜尋日文或中文…" oninput="renderWordList()" style="width:100%;margin-bottom:10px">
+      <div class="word-list" id="word-list"></div>
+
+      <!-- Edit word modal -->
+      <div id="edit-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.7);align-items:flex-end;justify-content:center">
+        <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px;width:100%;max-width:480px;border-top:1px solid var(--border)">
+          <div style="font-size:13px;color:var(--text2);margin-bottom:14px;font-weight:500">編輯單字</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <input class="form-input" id="edit-kanji" placeholder="漢字">
+            <input class="form-input" id="edit-hira" placeholder="平假名">
+          </div>
+          <input class="form-input" id="edit-meaning" placeholder="中文意思" style="width:100%;margin-bottom:10px">
+          <input class="form-input" id="edit-example" placeholder="例句（可留空）" style="width:100%;margin-bottom:14px">
+          <div style="display:flex;gap:8px">
+            <button onclick="closeEditModal()" style="flex:1;padding:11px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif">取消</button>
+            <button onclick="saveEditWord()" style="flex:2;padding:11px;background:var(--accent2);border:none;border-radius:var(--radius-sm);color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif">✓ 儲存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="screen" id="tab-progress">
+      <div class="stats-row">
+        <div class="stat-card accent1">
+          <div class="stat-val" id="pr-streak">0</div>
+          <div class="stat-label">🔥 連續天</div>
+        </div>
+        <div class="stat-card accent2">
+          <div class="stat-val" id="pr-total-learned">0</div>
+          <div class="stat-label">已學單字</div>
+        </div>
+        <div class="stat-card accent3">
+          <div class="stat-val" id="pr-accuracy">—</div>
+          <div class="stat-label">測驗正確率</div>
+        </div>
+      </div>
+
+      <div class="prog-section">
+        <h3>過去兩週活動</h3>
+        <div class="chart-wrap">
+          <div class="bar-chart" id="bar-chart"></div>
+        </div>
+      </div>
+
+      <div class="prog-section">
+        <h3>記憶狀態 (SRS)</h3>
+        <div class="srs-bars" id="srs-bars"></div>
+      </div>
+
+      <div class="prog-section">
+        <h3>今日目標</h3>
+        <div class="chart-wrap">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+            <span style="font-size:13px; color:var(--text2)">完成複習</span>
+            <span style="font-size:13px; font-family:'DM Mono'; color:var(--accent2)" id="goal-text">0 / 10</span>
+          </div>
+          <div class="progress-bar" style="height:8px; margin:0"><div class="progress-fill" id="goal-fill" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <div class="prog-section">
+        <h3>每日複習鬧鐘</h3>
+        <div class="chart-wrap" id="reminder-panel">
+
+          <!-- 未授權狀態 -->
+          <div id="notif-blocked" style="display:none; text-align:center; padding:8px 0">
+            <div style="font-size:13px; color:var(--danger); margin-bottom:8px">⚠️ 通知權限已被封鎖</div>
+            <div style="font-size:12px; color:var(--text2); line-height:1.6">請在瀏覽器網址列旁的🔒圖示<br>手動開啟「通知」權限後重新整理</div>
+          </div>
+
+          <!-- 主設定 -->
+          <div id="notif-main">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px">
+              <div>
+                <div style="font-size:14px; font-weight:500">每日提醒</div>
+                <div style="font-size:12px; color:var(--text2); margin-top:2px" id="notif-status-text">尚未開啟</div>
+              </div>
+              <button id="notif-toggle" onclick="toggleReminder()" style="
+                padding: 7px 16px; border-radius: 20px; border: 1px solid var(--border);
+                background: var(--surface2); color: var(--text2); font-size: 13px;
+                font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s;
+              ">開啟提醒</button>
+            </div>
+
+            <div id="notif-time-row" style="display:none">
+              <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px">
+                <span style="font-size:13px; color:var(--text2); flex-shrink:0">提醒時間</span>
+                <input type="time" id="reminder-time" value="08:00" class="form-input"
+                  style="flex:1; padding:8px 12px; font-size:14px"
+                  onchange="updateReminderTime()">
+              </div>
+              <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px">
+                <span style="font-size:12px; color:var(--text2); width:100%; margin-bottom:2px">快速選擇</span>
+                <button class="quick-time-btn" onclick="setQuickTime('07:00')">早上 7:00</button>
+                <button class="quick-time-btn" onclick="setQuickTime('08:00')">早上 8:00</button>
+                <button class="quick-time-btn" onclick="setQuickTime('12:00')">中午 12:00</button>
+                <button class="quick-time-btn" onclick="setQuickTime('20:00')">晚上 8:00</button>
+                <button class="quick-time-btn" onclick="setQuickTime('22:00')">晚上 10:00</button>
+              </div>
+              <button onclick="testNotification()" style="
+                width:100%; padding:9px; border-radius: var(--radius-sm);
+                background:none; border:1px solid var(--border); color:var(--text2);
+                font-size:13px; cursor:pointer; font-family:'DM Sans',sans-serif;
+                transition: all 0.15s;
+              " onmouseover="this.style.borderColor='var(--accent2)';this.style.color='var(--accent2)'"
+                 onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
+                🔔 測試通知
+              </button>
+            </div>
+          </div>
+
+        </div>
+        <div style="font-size:11px; color:var(--text3); margin-top:8px; line-height:1.6; padding:0 2px">
+          ⚠️ 瀏覽器通知需要網頁保持開啟或在背景執行。若要在手機上使用，建議將網頁加入主畫面（加到主屏幕）。
+        </div>
+      </div>
+
+      <div class="prog-section">
+        <h3>資料管理</h3>
+        <div class="chart-wrap">
+          <div style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.6">
+            重新載入預設單字庫（336個），會清除現有進度與自訂單字。
+          </div>
+          <button onclick="resetToDefault()" style="
+            width:100%; padding:11px; border-radius:var(--radius-sm);
+            background:rgba(247,110,110,0.1); border:1px solid rgba(247,110,110,0.3);
+            color:var(--danger); font-size:14px; font-weight:500;
+            cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.15s;
+          ">↺ 重置為預設單字庫</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 首次開啟安裝提示 -->
+<div id="install-modal" style="display:none; position:fixed; inset:0; z-index:300; background:rgba(0,0,0,0.75); align-items:flex-end; justify-content:center;">
+  <div style="background:var(--surface); border-radius:20px 20px 0 0; padding:28px 24px; width:100%; max-width:480px; border-top:1px solid var(--border);">
+    <div style="font-size:22px; margin-bottom:8px; text-align:center">📲</div>
+    <div style="font-size:16px; font-weight:600; color:var(--text); text-align:center; margin-bottom:8px" id="install-title">加入主畫面</div>
+    <div style="font-size:13px; color:var(--text2); line-height:1.8; margin-bottom:20px" id="install-body"></div>
+    <div style="background:var(--surface2); border-radius:var(--radius-sm); padding:12px 14px; margin-bottom:20px; font-size:12px; color:var(--accent); line-height:1.7" id="install-steps"></div>
+    <div style="font-size:11px; color:var(--text3); margin-bottom:16px; text-align:center">加入後資料會儲存在手機裡，不會因為關閉瀏覽器而消失</div>
+    <button onclick="closeInstallModal()" style="width:100%; padding:13px; background:var(--accent2); border:none; border-radius:var(--radius-sm); color:#fff; font-size:15px; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif;">好，我知道了！</button>
+  </div>
+</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────
+const DEFAULT_WORDS = [
+{ id:11, kanji:'でぐち', hira:'でぐち', meaning:'出口', example:'でぐちから出ます — 從出口出去', srs:0, nextReview:0, correct:0, total:0 },
+  { id:12, kanji:'コインロッカー', hira:'こいんろっかー', meaning:'置物櫃', example:'えきのコインロッカーににもつを入れます — 把行李放進車站的置物櫃', srs:0, nextReview:0, correct:0, total:0 },
+  { id:13, kanji:'じはんき', hira:'じはんき', meaning:'自動販賣機', example:'じはんきでジュースを買います — 在自動販賣機買果汁', srs:0, nextReview:0, correct:0, total:0 },
+  { id:14, kanji:'カフェ', hira:'かふぇ', meaning:'咖啡廳', example:'カフェでコーヒーを飲みます — 在咖啡廳喝咖啡', srs:0, nextReview:0, correct:0, total:0 },
+  { id:15, kanji:'ちかい', hira:'ちかい', meaning:'近', example:'えきがちかいです — 車站很近', srs:0, nextReview:0, correct:0, total:0 },
+  { id:16, kanji:'二階', hira:'にかい', meaning:'二樓', example:'にかいにあがります — 上到二樓', srs:0, nextReview:0, correct:0, total:0 },
+  { id:17, kanji:'でんわ', hira:'でんわ', meaning:'電話', example:'でんわをかけます — 打電話', srs:0, nextReview:0, correct:0, total:0 },
+  { id:18, kanji:'コンセント', hira:'こんせんと', meaning:'插座', example:'コンセントでスマホを充電します — 用插座幫手機充電', srs:0, nextReview:0, correct:0, total:0 },
+  { id:19, kanji:'かいだん', hira:'かいだん', meaning:'樓梯', example:'かいだんをのぼります — 爬樓梯', srs:0, nextReview:0, correct:0, total:0 },
+  { id:20, kanji:'とおい', hira:'とおい', meaning:'遠', example:'えきがとおいです — 車站很遠', srs:0, nextReview:0, correct:0, total:0 },
+  { id:21, kanji:'ちか', hira:'ちか', meaning:'地下', example:'ちかにコンビニがあります — 地下有便利商店', srs:0, nextReview:0, correct:0, total:0 },
+  { id:22, kanji:'おてあらい', hira:'おてあらい', meaning:'廁所', example:'おてあらいはどこですか — 請問廁所在哪裡', srs:0, nextReview:0, correct:0, total:0 },
+  { id:23, kanji:'エレベーター', hira:'えれべーたー', meaning:'電梯', example:'エレベーターでさんかいに行きます — 搭電梯去三樓', srs:0, nextReview:0, correct:0, total:0 },
+  { id:24, kanji:'タクシー', hira:'たくしー', meaning:'計程車', example:'タクシーで行きます — 搭計程車去', srs:0, nextReview:0, correct:0, total:0 },
+  { id:25, kanji:'WiFi', hira:'わいふぁい', meaning:'無線網路', example:'WiFiのパスワードを教えてください — 請告訴我WiFi的密碼', srs:0, nextReview:0, correct:0, total:0 },
+  { id:26, kanji:'のりかえ', hira:'のりかえ', meaning:'轉乘', example:'ここでのりかえします — 在這裡換乘', srs:0, nextReview:0, correct:0, total:0 },
+  { id:27, kanji:'ゴミばこ', hira:'ゴミばこ', meaning:'垃圾桶', example:'ゴミばこにゴミを捨てます — 把垃圾丟進垃圾桶', srs:0, nextReview:0, correct:0, total:0 },
+  { id:28, kanji:'ATM', hira:'えーてぃーえむ', meaning:'自動提款機', example:'ATMでお金をおろします — 在提款機領錢', srs:0, nextReview:0, correct:0, total:0 },
+  { id:29, kanji:'ホーム', hira:'ほーむ', meaning:'月台', example:'ホームででんしゃを待ちます — 在月台等電車', srs:0, nextReview:0, correct:0, total:0 },
+  { id:30, kanji:'かいさつ', hira:'かいさつ', meaning:'剪票口', example:'かいさつをとおります — 通過剪票口', srs:0, nextReview:0, correct:0, total:0 },
+  { id:31, kanji:'一階', hira:'いっかい', meaning:'一樓', example:'いっかいにいりぐちがあります — 一樓有入口', srs:0, nextReview:0, correct:0, total:0 },
+  { id:32, kanji:'七つ', hira:'ななつ', meaning:'七個', example:'りんごがななつあります — 有七個蘋果', srs:0, nextReview:0, correct:0, total:0 },
+  { id:33, kanji:'パイ', hira:'ぱい', meaning:'派', example:'りんごのパイを食べます — 吃蘋果派', srs:0, nextReview:0, correct:0, total:0 },
+  { id:34, kanji:'チョコレート', hira:'ちょこれーと', meaning:'巧克力', example:'チョコレートがすきです — 喜歡巧克力', srs:0, nextReview:0, correct:0, total:0 },
+  { id:35, kanji:'ぜんぶで', hira:'ぜんぶで', meaning:'總共', example:'ぜんぶでいくらですか — 總共多少錢', srs:0, nextReview:0, correct:0, total:0 },
+  { id:36, kanji:'いちご', hira:'いちご', meaning:'草莓', example:'いちごのケーキを食べます — 吃草莓蛋糕', srs:0, nextReview:0, correct:0, total:0 },
+  { id:37, kanji:'六つ', hira:'むっつ', meaning:'六個', example:'みかんがむっつあります — 有六個橘子', srs:0, nextReview:0, correct:0, total:0 },
+  { id:38, kanji:'クッキー', hira:'くっきー', meaning:'餅乾', example:'クッキーをやきます — 烤餅乾', srs:0, nextReview:0, correct:0, total:0 },
+  { id:39, kanji:'どの', hira:'どの', meaning:'哪種', example:'どのケーキがすきですか — 喜歡哪個蛋糕', srs:0, nextReview:0, correct:0, total:0 },
+  { id:40, kanji:'まっちゃ', hira:'まっちゃ', meaning:'抹茶', example:'まっちゃのアイスがすきです — 喜歡抹茶冰淇淋', srs:0, nextReview:0, correct:0, total:0 },
+  { id:41, kanji:'カップケーキ', hira:'かっぷけーき', meaning:'杯子蛋糕', example:'カップケーキをかいます — 買杯子蛋糕', srs:0, nextReview:0, correct:0, total:0 },
+  { id:42, kanji:'みどり', hira:'みどり', meaning:'綠色', example:'みどりのきがすきです — 喜歡綠色的樹', srs:0, nextReview:0, correct:0, total:0 },
+  { id:43, kanji:'五つ', hira:'いつつ', meaning:'五個', example:'ドーナツがいつつあります — 有五個甜甜圈', srs:0, nextReview:0, correct:0, total:0 },
+  { id:44, kanji:'ドーナツ', hira:'どーなつ', meaning:'甜甜圈', example:'ドーナツを食べます — 吃甜甜圈', srs:0, nextReview:0, correct:0, total:0 },
+  { id:45, kanji:'チーズケーキ', hira:'ちーずけーき', meaning:'芝士蛋糕', example:'チーズケーキがだいすきです — 非常喜歡起司蛋糕', srs:0, nextReview:0, correct:0, total:0 },
+  { id:46, kanji:'あの', hira:'あの', meaning:'那家、那個', example:'あのみせはおいしいです — 那家店很好吃', srs:0, nextReview:0, correct:0, total:0 },
+  { id:47, kanji:'もの', hira:'もの', meaning:'東西', example:'これはなんのものですか — 這是什麼東西', srs:0, nextReview:0, correct:0, total:0 },
+  { id:48, kanji:'どうですか', hira:'どうですか', meaning:'怎麼樣', example:'このケーキはどうですか — 這個蛋糕怎麼樣', srs:0, nextReview:0, correct:0, total:0 },
+  { id:49, kanji:'ケーキや', hira:'ケーキや', meaning:'蛋糕店', example:'あのケーキやはゆうめいです — 那家蛋糕店很有名', srs:0, nextReview:0, correct:0, total:0 },
+  { id:50, kanji:'はすきですか', hira:'はすきですか', meaning:'喜歡嗎', example:'チョコレートはすきですか — 你喜歡巧克力嗎', srs:0, nextReview:0, correct:0, total:0 },
+  { id:51, kanji:'あまい', hira:'あまい', meaning:'甜', example:'このケーキはあまいです — 這個蛋糕很甜', srs:0, nextReview:0, correct:0, total:0 },
+  { id:52, kanji:'すこし', hira:'すこし', meaning:'稍微', example:'すこしあまいです — 稍微有點甜', srs:0, nextReview:0, correct:0, total:0 },
+  { id:53, kanji:'アイスコーヒー', hira:'あいすこーひー', meaning:'冰咖啡', example:'アイスコーヒーを飲みます — 喝冰咖啡', srs:0, nextReview:0, correct:0, total:0 },
+  { id:54, kanji:'アイスクリーム', hira:'あいすくりーむ', meaning:'冰淇淋', example:'アイスクリームを食べます — 吃冰淇淋', srs:0, nextReview:0, correct:0, total:0 },
+  { id:55, kanji:'こうちゃ', hira:'こうちゃ', meaning:'紅茶', example:'こうちゃを飲みます — 喝紅茶', srs:0, nextReview:0, correct:0, total:0 },
+  { id:56, kanji:'小さい', hira:'ちいさい', meaning:'小', example:'このくつはちいさいです — 這雙鞋很小', srs:0, nextReview:0, correct:0, total:0 },
+  { id:57, kanji:'みそしる', hira:'みそしる', meaning:'味噌湯', example:'あさごはんにみそしるを飲みます — 早餐喝味噌湯', srs:0, nextReview:0, correct:0, total:0 },
+  { id:58, kanji:'そば', hira:'そば', meaning:'蕎麥麵', example:'そばを食べます — 吃蕎麥麵', srs:0, nextReview:0, correct:0, total:0 },
+  { id:59, kanji:'大きい', hira:'おおきい', meaning:'大的', example:'このかばんはおおきいです — 這個包包很大', srs:0, nextReview:0, correct:0, total:0 },
+  { id:60, kanji:'おにぎり', hira:'おにぎり', meaning:'飯糰', example:'コンビニでおにぎりをかいます — 在便利商店買飯糰', srs:0, nextReview:0, correct:0, total:0 },
+  { id:61, kanji:'その', hira:'その', meaning:'那個、那家', example:'そのケーキはおいしいです — 那個蛋糕很好吃', srs:0, nextReview:0, correct:0, total:0 },
+  { id:62, kanji:'三つ', hira:'みっつ', meaning:'三個', example:'おにぎりがみっつあります — 有三個飯糰', srs:0, nextReview:0, correct:0, total:0 },
+  { id:63, kanji:'四つ', hira:'よっつ', meaning:'四個', example:'りんごがよっつあります — 有四個蘋果', srs:0, nextReview:0, correct:0, total:0 },
+  { id:64, kanji:'じゃあ', hira:'じゃあ', meaning:'那麼', example:'じゃあ、行きましょう — 那麼，走吧', srs:0, nextReview:0, correct:0, total:0 },
+  { id:65, kanji:'一つ', hira:'ひとつ', meaning:'一個', example:'ケーキをひとつください — 請給我一個蛋糕', srs:0, nextReview:0, correct:0, total:0 },
+  { id:66, kanji:'水', hira:'みず', meaning:'水', example:'みずを飲みます — 喝水', srs:0, nextReview:0, correct:0, total:0 },
+  { id:67, kanji:'二つ', hira:'ふたつ', meaning:'兩個', example:'コーヒーをふたつください — 請給我兩杯咖啡', srs:0, nextReview:0, correct:0, total:0 },
+  { id:68, kanji:'てんぷら', hira:'てんぷら', meaning:'天婦羅', example:'てんぷらを食べます — 吃天婦羅', srs:0, nextReview:0, correct:0, total:0 },
+  { id:69, kanji:'ええと', hira:'ええと', meaning:'嗯', example:'ええと、わかりません — 嗯，我不知道', srs:0, nextReview:0, correct:0, total:0 },
+  { id:70, kanji:'レストラン', hira:'れすとらん', meaning:'餐廳', example:'レストランで食べます — 在餐廳吃飯', srs:0, nextReview:0, correct:0, total:0 },
+  { id:71, kanji:'ていしょく', hira:'ていしょく', meaning:'套餐', example:'ていしょくをちゅうもんします — 點套餐', srs:0, nextReview:0, correct:0, total:0 },
+  { id:72, kanji:'うどん', hira:'うどん', meaning:'烏龍麵', example:'うどんを食べます — 吃烏龍麵', srs:0, nextReview:0, correct:0, total:0 },
+  { id:73, kanji:'ココア', hira:'ここあ', meaning:'可可', example:'ふゆにはあたたかいココアを飲みます — 冬天喝熱可可', srs:0, nextReview:0, correct:0, total:0 },
+  { id:74, kanji:'おんせん', hira:'おんせん', meaning:'溫泉', example:'おんせんに入ります — 泡溫泉', srs:0, nextReview:0, correct:0, total:0 },
+  { id:75, kanji:'ふゆ', hira:'ふゆ', meaning:'冬天', example:'ふゆはさむいです — 冬天很冷', srs:0, nextReview:0, correct:0, total:0 },
+  { id:76, kanji:'ゆき', hira:'ゆき', meaning:'下雪', example:'ふゆにゆきがふります — 冬天下雪', srs:0, nextReview:0, correct:0, total:0 },
+  { id:77, kanji:'さむい', hira:'さむい', meaning:'冷', example:'きょうはさむいです — 今天很冷', srs:0, nextReview:0, correct:0, total:0 },
+  { id:78, kanji:'あめ', hira:'あめ', meaning:'下雨', example:'あめがふります — 下雨', srs:0, nextReview:0, correct:0, total:0 },
+  { id:79, kanji:'あき', hira:'あき', meaning:'秋天', example:'あきはとてもきれいです — 秋天非常美', srs:0, nextReview:0, correct:0, total:0 },
+  { id:80, kanji:'コンサート', hira:'こんさーと', meaning:'音樂會', example:'コンサートに行きます — 去音樂會', srs:0, nextReview:0, correct:0, total:0 },
+  { id:81, kanji:'九月', hira:'くがつ', meaning:'九月', example:'くがつにほんに行きます — 九月去日本', srs:0, nextReview:0, correct:0, total:0 },
+  { id:82, kanji:'七月', hira:'しちがつ', meaning:'七月', example:'しちがつはあついです — 七月很熱', srs:0, nextReview:0, correct:0, total:0 },
+  { id:83, kanji:'休み', hira:'やすみ', meaning:'放假', example:'あしたはやすみです — 明天放假', srs:0, nextReview:0, correct:0, total:0 },
+  { id:84, kanji:'プール', hira:'ぷーる', meaning:'游泳池', example:'なつにプールでおよぎます — 夏天在游泳池游泳', srs:0, nextReview:0, correct:0, total:0 },
+  { id:85, kanji:'はなび', hira:'はなび', meaning:'煙火', example:'なつにはなびをみます — 夏天看煙火', srs:0, nextReview:0, correct:0, total:0 },
+  { id:86, kanji:'あつい', hira:'あつい', meaning:'热', example:'なつはあついです — 夏天很熱', srs:0, nextReview:0, correct:0, total:0 },
+  { id:87, kanji:'はれ', hira:'はれ', meaning:'晴天', example:'きょうははれです — 今天是晴天', srs:0, nextReview:0, correct:0, total:0 },
+  { id:88, kanji:'なつ', hira:'なつ', meaning:'夏天', example:'なつがすきです — 喜歡夏天', srs:0, nextReview:0, correct:0, total:0 },
+  { id:89, kanji:'はる', hira:'はる', meaning:'春天', example:'はるになるとさくらがさきます — 春天一到，櫻花就開了', srs:0, nextReview:0, correct:0, total:0 },
+  { id:90, kanji:'日', hira:'ひ', meaning:'日子', example:'いいひですね — 真是好天氣', srs:0, nextReview:0, correct:0, total:0 },
+  { id:91, kanji:'こうえん', hira:'こうえん', meaning:'公園', example:'こうえんでさんぽします — 在公園散步', srs:0, nextReview:0, correct:0, total:0 },
+  { id:92, kanji:'あたたかい', hira:'あたたかい', meaning:'溫暖', example:'はるはあたたかいです — 春天很溫暖', srs:0, nextReview:0, correct:0, total:0 },
+  { id:93, kanji:'あね', hira:'あね', meaning:'姐姐', example:'あねはとうきょうにいます — 姐姐在東京', srs:0, nextReview:0, correct:0, total:0 },
+  { id:94, kanji:'どうが', hira:'どうが', meaning:'影片', example:'どうがをみます — 看影片', srs:0, nextReview:0, correct:0, total:0 },
+  { id:95, kanji:'日曜日', hira:'にちようび', meaning:'星期天', example:'にちようびはやすみです — 星期天放假', srs:0, nextReview:0, correct:0, total:0 },
+  { id:96, kanji:'話します', hira:'はなします', meaning:'說話・聊天', example:'にほんごではなします — 用日文說話', srs:0, nextReview:0, correct:0, total:0 },
+  { id:97, kanji:'あに', hira:'あに', meaning:'哥哥', example:'あにはだいがくせいです — 哥哥是大學生', srs:0, nextReview:0, correct:0, total:0 },
+  { id:98, kanji:'土曜日', hira:'どようび', meaning:'星期六', example:'どようびにともだちとあそびます — 星期六和朋友玩', srs:0, nextReview:0, correct:0, total:0 },
+  { id:99, kanji:'じゅうどう', hira:'じゅうどう', meaning:'柔道', example:'じゅうどうをれんしゅうします — 練習柔道', srs:0, nextReview:0, correct:0, total:0 },
+  { id:100, kanji:'ミステリー', hira:'みすてりー', meaning:'懸疑', example:'ミステリーのドラマをみます — 看懸疑電視劇', srs:0, nextReview:0, correct:0, total:0 },
+  { id:101, kanji:'かぞく', hira:'かぞく', meaning:'家人', example:'かぞくとしょくじします — 和家人吃飯', srs:0, nextReview:0, correct:0, total:0 },
+  { id:102, kanji:'母', hira:'はは', meaning:'媽媽', example:'はははやさしいです — 媽媽很溫柔', srs:0, nextReview:0, correct:0, total:0 },
+  { id:103, kanji:'スポーツ', hira:'すぽーつ', meaning:'運動', example:'スポーツがすきです — 喜歡運動', srs:0, nextReview:0, correct:0, total:0 },
+  { id:104, kanji:'父', hira:'ちち', meaning:'爸爸', example:'ちちはしごとがすきです — 爸爸很喜歡工作', srs:0, nextReview:0, correct:0, total:0 },
+  { id:105, kanji:'あそびます', hira:'あそびます', meaning:'玩', example:'ともだちとあそびます — 和朋友玩', srs:0, nextReview:0, correct:0, total:0 },
+  { id:106, kanji:'れんあい', hira:'れんあい', meaning:'愛情', example:'れんあいドラマをみます — 看愛情劇', srs:0, nextReview:0, correct:0, total:0 },
+  { id:107, kanji:'しゅうまつ', hira:'しゅうまつ', meaning:'週末', example:'しゅうまつはなにをしますか — 週末做什麼', srs:0, nextReview:0, correct:0, total:0 },
+  { id:108, kanji:'テニス', hira:'てにす', meaning:'網球', example:'テニスをします — 打網球', srs:0, nextReview:0, correct:0, total:0 },
+  { id:109, kanji:'ひとりで', hira:'ひとりで', meaning:'一個人', example:'ひとりで行きます — 一個人去', srs:0, nextReview:0, correct:0, total:0 },
+  { id:110, kanji:'時間', hira:'じかん', meaning:'小時', example:'いちじかんかかります — 要花一個小時', srs:0, nextReview:0, correct:0, total:0 },
+  { id:111, kanji:'しゅうてん', hira:'しゅうてん', meaning:'終點站', example:'しゅうてんでおります — 在終點站下車', srs:0, nextReview:0, correct:0, total:0 },
+  { id:112, kanji:'ながい', hira:'ながい', meaning:'長', example:'このでんしゃはながいです — 這列電車很長', srs:0, nextReview:0, correct:0, total:0 },
+  { id:113, kanji:'分', hira:'ふん', meaning:'分鐘', example:'じゅっぷんまってください — 請等十分鐘', srs:0, nextReview:0, correct:0, total:0 },
+  { id:114, kanji:'どのぐらい', hira:'どのぐらい', meaning:'多久', example:'どのぐらいかかりますか — 要花多久時間', srs:0, nextReview:0, correct:0, total:0 },
+  { id:115, kanji:'十分', hira:'じゅっぷん', meaning:'十分鐘', example:'じゅっぷんかかります — 要花十分鐘', srs:0, nextReview:0, correct:0, total:0 },
+  { id:116, kanji:'ぐらい', hira:'ぐらい', meaning:'大概', example:'さんじゅっぷんぐらいかかります — 大概要花三十分鐘', srs:0, nextReview:0, correct:0, total:0 },
+  { id:117, kanji:'かかります', hira:'かかります', meaning:'花費（時間）', example:'いちじかんかかります — 要花一個小時', srs:0, nextReview:0, correct:0, total:0 },
+  { id:118, kanji:'はやい', hira:'はやい', meaning:'快', example:'このでんしゃははやいです — 這列電車很快', srs:0, nextReview:0, correct:0, total:0 },
+  { id:119, kanji:'うえのこうえん', hira:'うえのこうえん', meaning:'上野公園', example:'うえのこうえんにいきます — 去上野公園', srs:0, nextReview:0, correct:0, total:0 },
+  { id:120, kanji:'つぎの', hira:'つぎの', meaning:'下一個', example:'つぎのバスにのります — 搭下一班公車', srs:0, nextReview:0, correct:0, total:0 },
+  { id:121, kanji:'もうすぐ', hira:'もうすぐ', meaning:'快要', example:'もうすぐつきます — 快到了', srs:0, nextReview:0, correct:0, total:0 },
+  { id:122, kanji:'あさくさ', hira:'あさくさ', meaning:'浅草', example:'あさくさはゆうめいです — 淺草很有名', srs:0, nextReview:0, correct:0, total:0 },
+  { id:123, kanji:'来ます', hira:'きます', meaning:'來', example:'ともだちがきます — 朋友來了', srs:0, nextReview:0, correct:0, total:0 },
+  { id:124, kanji:'つぎ', hira:'つぎ', meaning:'下一個', example:'つぎはしぶやです — 下一站是澀谷', srs:0, nextReview:0, correct:0, total:0 },
+  { id:125, kanji:'バス', hira:'ばす', meaning:'公車', example:'バスで行きます — 搭公車去', srs:0, nextReview:0, correct:0, total:0 },
+  { id:126, kanji:'あきはばら', hira:'あきはばら', meaning:'秋叶原', example:'あきはばらにでんきやがあります — 秋葉原有電器店', srs:0, nextReview:0, correct:0, total:0 },
+  { id:127, kanji:'でんしゃ', hira:'でんしゃ', meaning:'電車', example:'でんしゃにのります — 搭電車', srs:0, nextReview:0, correct:0, total:0 },
+  { id:128, kanji:'しぶや', hira:'しぶや', meaning:'澀谷', example:'しぶやでかいものをします — 在澀谷購物', srs:0, nextReview:0, correct:0, total:0 },
+  { id:129, kanji:'行きます', hira:'いきます', meaning:'去', example:'がっこうに行きます — 去學校', srs:0, nextReview:0, correct:0, total:0 },
+  { id:130, kanji:'でかけます', hira:'でかけます', meaning:'出去', example:'ともだちとでかけます — 和朋友出門', srs:0, nextReview:0, correct:0, total:0 },
+  { id:131, kanji:'はしります', hira:'はしります', meaning:'跑步', example:'まいあさはしります — 每天早上跑步', srs:0, nextReview:0, correct:0, total:0 },
+  { id:132, kanji:'飲みます', hira:'のみます', meaning:'喝', example:'みずを飲みます — 喝水', srs:0, nextReview:0, correct:0, total:0 },
+  { id:133, kanji:'およぎます', hira:'およぎます', meaning:'游泳', example:'プールでおよぎます — 在游泳池游泳', srs:0, nextReview:0, correct:0, total:0 },
+  { id:134, kanji:'十二', hira:'じゅうに', meaning:'十二', example:'じゅうにじにひるごはんをたべます — 十二點吃午飯', srs:0, nextReview:0, correct:0, total:0 },
+  { id:135, kanji:'ねます', hira:'ねます', meaning:'睡覺', example:'じゅうじにねます — 十點睡覺', srs:0, nextReview:0, correct:0, total:0 },
+  { id:136, kanji:'からて', hira:'からて', meaning:'空手道', example:'からてをならいます — 學空手道', srs:0, nextReview:0, correct:0, total:0 },
+  { id:137, kanji:'ヨガ', hira:'よが', meaning:'瑜伽', example:'まいにちヨガをします — 每天做瑜伽', srs:0, nextReview:0, correct:0, total:0 },
+  { id:138, kanji:'らいしゅう', hira:'らいしゅう', meaning:'下週', example:'らいしゅうりょこうに行きます — 下週去旅行', srs:0, nextReview:0, correct:0, total:0 },
+  { id:139, kanji:'あした', hira:'あした', meaning:'明天', example:'あしたはやすみです — 明天放假', srs:0, nextReview:0, correct:0, total:0 },
+  { id:140, kanji:'買います', hira:'かいます', meaning:'買', example:'スーパーでかいます — 在超市買', srs:0, nextReview:0, correct:0, total:0 },
+  { id:141, kanji:'まいしゅう', hira:'まいしゅう', meaning:'每週', example:'まいしゅうテニスをします — 每週打網球', srs:0, nextReview:0, correct:0, total:0 },
+  { id:142, kanji:'十一', hira:'じゅういち', meaning:'十一', example:'じゅういちじにねます — 十一點睡覺', srs:0, nextReview:0, correct:0, total:0 },
+  { id:143, kanji:'ごろ', hira:'ごろ', meaning:'左右', example:'しちじごろおきます — 七點左右起床', srs:0, nextReview:0, correct:0, total:0 },
+  { id:144, kanji:'バレーボール', hira:'ばれーぼーる', meaning:'排球', example:'バレーボールをします — 打排球', srs:0, nextReview:0, correct:0, total:0 },
+  { id:145, kanji:'十', hira:'じゅう', meaning:'十', example:'じゅうにんいます — 有十個人', srs:0, nextReview:0, correct:0, total:0 },
+  { id:146, kanji:'つくります', hira:'つくります', meaning:'做', example:'りょうりをつくります — 做料理', srs:0, nextReview:0, correct:0, total:0 },
+  { id:147, kanji:'何時', hira:'なんじ', meaning:'幾點', example:'いまなんじですか — 現在幾點', srs:0, nextReview:0, correct:0, total:0 },
+  { id:148, kanji:'いつも', hira:'いつも', meaning:'總是', example:'いつもコーヒーを飲みます — 總是喝咖啡', srs:0, nextReview:0, correct:0, total:0 },
+  { id:149, kanji:'ラジオ', hira:'らじお', meaning:'收音機', example:'ラジオをききます — 聽收音機', srs:0, nextReview:0, correct:0, total:0 },
+  { id:150, kanji:'食べます', hira:'たべます', meaning:'吃', example:'すしを食べます — 吃壽司', srs:0, nextReview:0, correct:0, total:0 },
+  { id:151, kanji:'おきます', hira:'おきます', meaning:'起床', example:'ろくじにおきます — 六點起床', srs:0, nextReview:0, correct:0, total:0 },
+  { id:152, kanji:'ゲーム', hira:'げーむ', meaning:'電動遊戲', example:'ゲームをします — 打電動', srs:0, nextReview:0, correct:0, total:0 },
+  { id:153, kanji:'コメディ', hira:'こめでぃ', meaning:'喜劇', example:'コメディがすきです — 喜歡喜劇', srs:0, nextReview:0, correct:0, total:0 },
+  { id:154, kanji:'アクション', hira:'あくしょん', meaning:'動作', example:'アクションえいががすきです — 喜歡動作電影', srs:0, nextReview:0, correct:0, total:0 },
+  { id:155, kanji:'どんな', hira:'どんな', meaning:'什麼樣的', example:'どんなえいががすきですか — 喜歡什麼樣的電影', srs:0, nextReview:0, correct:0, total:0 },
+  { id:156, kanji:'ホラー', hira:'ほらー', meaning:'恐怖', example:'ホラーえいがはこわいです — 恐怖電影很可怕', srs:0, nextReview:0, correct:0, total:0 },
+  { id:157, kanji:'ドラマ', hira:'どらま', meaning:'電視劇', example:'ドラマをみます — 看電視劇', srs:0, nextReview:0, correct:0, total:0 },
+  { id:158, kanji:'アメリカの', hira:'アメリカの', meaning:'美國的', example:'アメリカのえいががすきです — 喜歡美國的電影', srs:0, nextReview:0, correct:0, total:0 },
+  { id:159, kanji:'日本の', hira:'にほんの', meaning:'日本的', example:'にほんのアニメがすきです — 喜歡日本的動漫', srs:0, nextReview:0, correct:0, total:0 },
+  { id:160, kanji:'ファンタジー', hira:'ふぁんたじー', meaning:'奇幻', example:'ファンタジーのアニメがすきです — 喜歡奇幻動漫', srs:0, nextReview:0, correct:0, total:0 },
+  { id:161, kanji:'すき', hira:'すき', meaning:'喜歡', example:'コーヒーがすきです — 喜歡咖啡', srs:0, nextReview:0, correct:0, total:0 },
+  { id:162, kanji:'Kポップ', hira:'Kぽっぷ', meaning:'韓國流行音樂', example:'Kポップをよくききます — 常聽韓國流行音樂', srs:0, nextReview:0, correct:0, total:0 },
+  { id:163, kanji:'かのじょ', hira:'かのじょ', meaning:'女朋友', example:'かのじょはがくせいです — 女朋友是學生', srs:0, nextReview:0, correct:0, total:0 },
+  { id:164, kanji:'さんは', hira:'さんは', meaning:'先生是', example:'たなかさんはせんせいです — 田中先生是老師', srs:0, nextReview:0, correct:0, total:0 },
+  { id:165, kanji:'かんこく', hira:'かんこく', meaning:'韓國', example:'かんこくに行きたいです — 想去韓國', srs:0, nextReview:0, correct:0, total:0 },
+  { id:166, kanji:'ちゅうごく', hira:'ちゅうごく', meaning:'中國', example:'ちゅうごくごをべんきょうします — 學中文', srs:0, nextReview:0, correct:0, total:0 },
+  { id:167, kanji:'イギリス', hira:'いぎりす', meaning:'英國', example:'イギリスにすんでいます — 住在英國', srs:0, nextReview:0, correct:0, total:0 },
+  { id:168, kanji:'エリカ', hira:'えりか', meaning:'艾莉卡', example:'エリカさんはアメリカじんです — 艾莉卡是美國人', srs:0, nextReview:0, correct:0, total:0 },
+  { id:169, kanji:'ダニエル', hira:'だにえる', meaning:'丹尼爾', example:'ダニエルさんはカナダじんです — 丹尼爾是加拿大人', srs:0, nextReview:0, correct:0, total:0 },
+  { id:170, kanji:'かれし', hira:'かれし', meaning:'男朋友', example:'かれしとえいがをみます — 和男朋友看電影', srs:0, nextReview:0, correct:0, total:0 },
+  { id:171, kanji:'こちら', hira:'こちら', meaning:'這位', example:'こちらはたなかさんです — 這位是田中先生', srs:0, nextReview:0, correct:0, total:0 },
+  { id:172, kanji:'と言います', hira:'といいます', meaning:'叫', example:'わたしはけんといいます — 我叫健', srs:0, nextReview:0, correct:0, total:0 },
+  { id:173, kanji:'アンドリュー', hira:'あんどりゅー', meaning:'安德魯', example:'アンドリューさんはイギリスじんです — 安德魯是英國人', srs:0, nextReview:0, correct:0, total:0 },
+  { id:174, kanji:'たかい', hira:'たかい', meaning:'貴', example:'このかばんはたかいです — 這個包包很貴', srs:0, nextReview:0, correct:0, total:0 },
+  { id:175, kanji:'みせ', hira:'みせ', meaning:'店', example:'このみせはやすいです — 這家店很便宜', srs:0, nextReview:0, correct:0, total:0 },
+  { id:176, kanji:'ジャケット', hira:'じゃけっと', meaning:'夾克', example:'ジャケットをきます — 穿夾克', srs:0, nextReview:0, correct:0, total:0 },
+  { id:177, kanji:'ありがとうございます', hira:'ありがとうございます', meaning:'謝謝您', example:'ありがとうございます、たすかりました — 謝謝您，幫了大忙', srs:0, nextReview:0, correct:0, total:0 },
+  { id:178, kanji:'くろい', hira:'くろい', meaning:'黑色的', example:'くろいジャケットをかいます — 買黑色的夾克', srs:0, nextReview:0, correct:0, total:0 },
+  { id:179, kanji:'千', hira:'せん', meaning:'千', example:'せんえんです — 一千日圓', srs:0, nextReview:0, correct:0, total:0 },
+  { id:180, kanji:'えん', hira:'えん', meaning:'日圓', example:'このりんごはひゃくえんです — 這個蘋果一百日圓', srs:0, nextReview:0, correct:0, total:0 },
+  { id:181, kanji:'ネクタイ', hira:'ねくたい', meaning:'領帶', example:'ネクタイをします — 打領帶', srs:0, nextReview:0, correct:0, total:0 },
+  { id:182, kanji:'いくら', hira:'いくら', meaning:'多少錢', example:'これはいくらですか — 這個多少錢', srs:0, nextReview:0, correct:0, total:0 },
+  { id:183, kanji:'百', hira:'ひゃく', meaning:'百', example:'ひゃくえんです — 一百日圓', srs:0, nextReview:0, correct:0, total:0 },
+  { id:184, kanji:'やすい', hira:'やすい', meaning:'便宜', example:'このTシャツはやすいです — 這件T恤很便宜', srs:0, nextReview:0, correct:0, total:0 },
+  { id:185, kanji:'スカート', hira:'すかーと', meaning:'裙子', example:'スカートをはきます — 穿裙子', srs:0, nextReview:0, correct:0, total:0 },
+  { id:186, kanji:'ね', hira:'ね', meaning:'啊', example:'きれいですね — 很漂亮呢', srs:0, nextReview:0, correct:0, total:0 },
+  { id:187, kanji:'かわいい', hira:'かわいい', meaning:'可愛', example:'このねこはかわいいです — 這隻貓很可愛', srs:0, nextReview:0, correct:0, total:0 },
+  { id:188, kanji:'あおい', hira:'あおい', meaning:'藍色的', example:'あおいスカートがすきです — 喜歡藍色的裙子', srs:0, nextReview:0, correct:0, total:0 },
+  { id:189, kanji:'Tシャツ', hira:'Tしゃつ', meaning:'T恤', example:'Tシャツをきます — 穿T恤', srs:0, nextReview:0, correct:0, total:0 },
+  { id:190, kanji:'が', hira:'が', meaning:'但是、雖然', example:'たかいですが、かいます — 雖然很貴但還是買了', srs:0, nextReview:0, correct:0, total:0 },
+  { id:191, kanji:'新しい', hira:'あたらしい', meaning:'新', example:'あたらしいスマホをかいます — 買新手機', srs:0, nextReview:0, correct:0, total:0 },
+  { id:192, kanji:'ほしい', hira:'ほしい', meaning:'想要', example:'あたらしいスマホがほしいです — 想要新手機', srs:0, nextReview:0, correct:0, total:0 },
+  { id:193, kanji:'さいふ', hira:'さいふ', meaning:'錢包', example:'さいふをわすれました — 忘記帶錢包', srs:0, nextReview:0, correct:0, total:0 },
+  { id:194, kanji:'ふく', hira:'ふく', meaning:'衣服', example:'あたらしいふくをかいます — 買新衣服', srs:0, nextReview:0, correct:0, total:0 },
+  { id:195, kanji:'この', hira:'この', meaning:'這個、這件', example:'このかばんはいくらですか — 這個包包多少錢', srs:0, nextReview:0, correct:0, total:0 },
+  { id:196, kanji:'はちょっと', hira:'はちょっと', meaning:'有點', example:'それはちょっとたかいです — 那個有點貴', srs:0, nextReview:0, correct:0, total:0 },
+  { id:197, kanji:'古い', hira:'ふるい', meaning:'舊', example:'このかばんはふるいです — 這個包包很舊', srs:0, nextReview:0, correct:0, total:0 },
+  { id:198, kanji:'カレー', hira:'かれー', meaning:'咖哩', example:'カレーをたべます — 吃咖哩', srs:0, nextReview:0, correct:0, total:0 },
+  { id:199, kanji:'五', hira:'ご', meaning:'5，五', example:'ごにんいます — 有五個人', srs:0, nextReview:0, correct:0, total:0 },
+  { id:200, kanji:'ばんごはん', hira:'ばんごはん', meaning:'晚飯', example:'ばんごはんをたべます — 吃晚飯', srs:0, nextReview:0, correct:0, total:0 },
+  { id:201, kanji:'まいばん', hira:'まいばん', meaning:'每天晚上', example:'まいばんニュースをみます — 每天晚上看新聞', srs:0, nextReview:0, correct:0, total:0 },
+  { id:202, kanji:'八', hira:'はち', meaning:'八', example:'はちじにかいしゃにいきます — 八點去公司', srs:0, nextReview:0, correct:0, total:0 },
+  { id:203, kanji:'ひるごはん', hira:'ひるごはん', meaning:'午飯', example:'ひるごはんはラーメンです — 午飯是拉麵', srs:0, nextReview:0, correct:0, total:0 },
+  { id:204, kanji:'パスタ', hira:'ぱすた', meaning:'義大利麵', example:'パスタをつくります — 做義大利麵', srs:0, nextReview:0, correct:0, total:0 },
+  { id:205, kanji:'四時', hira:'よじ', meaning:'四點', example:'よじにかえります — 四點回去', srs:0, nextReview:0, correct:0, total:0 },
+  { id:206, kanji:'べんとう', hira:'べんとう', meaning:'便當', example:'べんとうをもっていきます — 帶便當去', srs:0, nextReview:0, correct:0, total:0 },
+  { id:207, kanji:'七時', hira:'しちじ', meaning:'七點', example:'しちじにおきます — 七點起床', srs:0, nextReview:0, correct:0, total:0 },
+  { id:208, kanji:'ジュース', hira:'じゅーす', meaning:'果汁', example:'オレンジジュースを飲みます — 喝柳橙汁', srs:0, nextReview:0, correct:0, total:0 },
+  { id:209, kanji:'コーヒー', hira:'こーひー', meaning:'咖啡', example:'コーヒーを飲みます — 喝咖啡', srs:0, nextReview:0, correct:0, total:0 },
+  { id:210, kanji:'のみます', hira:'のみます', meaning:'喝', example:'みずをのみます — 喝水', srs:0, nextReview:0, correct:0, total:0 },
+  { id:211, kanji:'まいあさ', hira:'まいあさ', meaning:'每天早上', example:'まいあさジョギングをします — 每天早上慢跑', srs:0, nextReview:0, correct:0, total:0 },
+  { id:212, kanji:'六', hira:'ろく', meaning:'六', example:'ろくじにおきます — 六點起床', srs:0, nextReview:0, correct:0, total:0 },
+  { id:213, kanji:'時', hira:'じ', meaning:'點、的時候', example:'しちじにおきます — 七點起床', srs:0, nextReview:0, correct:0, total:0 },
+  { id:214, kanji:'あさごはん', hira:'あさごはん', meaning:'早飯', example:'あさごはんはパンです — 早飯是麵包', srs:0, nextReview:0, correct:0, total:0 },
+  { id:215, kanji:'サンドイッチ', hira:'さんどいっち', meaning:'三明治', example:'サンドイッチをたべます — 吃三明治', srs:0, nextReview:0, correct:0, total:0 },
+  { id:216, kanji:'まいにち', hira:'まいにち', meaning:'每天', example:'まいにちにほんごをべんきょうします — 每天學日文', srs:0, nextReview:0, correct:0, total:0 },
+  { id:217, kanji:'パン', hira:'ぱん', meaning:'麵包', example:'あさごはんにパンをたべます — 早餐吃麵包', srs:0, nextReview:0, correct:0, total:0 },
+  { id:218, kanji:'たべます', hira:'たべます', meaning:'吃', example:'すしをたべます — 吃壽司', srs:0, nextReview:0, correct:0, total:0 },
+  { id:219, kanji:'まんが', hira:'まんが', meaning:'漫畫', example:'まんがをよみます — 看漫畫', srs:0, nextReview:0, correct:0, total:0 },
+  { id:220, kanji:'やきゅう', hira:'やきゅう', meaning:'棒球', example:'やきゅうがすきです — 喜歡棒球', srs:0, nextReview:0, correct:0, total:0 },
+  { id:221, kanji:'Jポップ', hira:'Jぽっぷ', meaning:'日本流行音樂', example:'Jポップをまいにちききます — 每天聽日本流行音樂', srs:0, nextReview:0, correct:0, total:0 },
+  { id:222, kanji:'アニメ', hira:'あにめ', meaning:'動漫', example:'アニメをよくみます — 常看動漫', srs:0, nextReview:0, correct:0, total:0 },
+  { id:223, kanji:'ニュース', hira:'にゅーす', meaning:'新聞', example:'テレビでニュースをみます — 在電視上看新聞', srs:0, nextReview:0, correct:0, total:0 },
+  { id:224, kanji:'本', hira:'ほん', meaning:'書', example:'ほんをよみます — 看書', srs:0, nextReview:0, correct:0, total:0 },
+  { id:225, kanji:'ときどき', hira:'ときどき', meaning:'有時候', example:'ときどきえいがをみます — 有時候看電影', srs:0, nextReview:0, correct:0, total:0 },
+  { id:226, kanji:'ざっし', hira:'ざっし', meaning:'雜誌', example:'ざっしをよみます — 看雜誌', srs:0, nextReview:0, correct:0, total:0 },
+  { id:227, kanji:'読みます', hira:'よみます', meaning:'讀・看（書）', example:'ほんをよみます — 看書', srs:0, nextReview:0, correct:0, total:0 },
+  { id:228, kanji:'おんがく', hira:'おんがく', meaning:'音樂', example:'おんがくをききます — 聽音樂', srs:0, nextReview:0, correct:0, total:0 },
+  { id:229, kanji:'よく', hira:'よく', meaning:'常常', example:'よくえいがをみます — 常常看電影', srs:0, nextReview:0, correct:0, total:0 },
+  { id:230, kanji:'ジャズ', hira:'じゃず', meaning:'爵士樂', example:'ジャズをききます — 聽爵士樂', srs:0, nextReview:0, correct:0, total:0 },
+  { id:231, kanji:'ロック', hira:'ろっく', meaning:'搖滾樂', example:'ロックがすきです — 喜歡搖滾樂', srs:0, nextReview:0, correct:0, total:0 },
+  { id:232, kanji:'ききます', hira:'ききます', meaning:'聽', example:'おんがくをききます — 聽音樂', srs:0, nextReview:0, correct:0, total:0 },
+  { id:233, kanji:'サッカー', hira:'さっかー', meaning:'足球', example:'サッカーをします — 踢足球', srs:0, nextReview:0, correct:0, total:0 },
+  { id:234, kanji:'バスケットボール', hira:'ばすけっとぼーる', meaning:'籃球', example:'バスケットボールをします — 打籃球', srs:0, nextReview:0, correct:0, total:0 },
+  { id:235, kanji:'します', hira:'します', meaning:'做', example:'スポーツをします — 做運動', srs:0, nextReview:0, correct:0, total:0 },
+  { id:236, kanji:'テレビ', hira:'てれび', meaning:'電視', example:'テレビをみます — 看電視', srs:0, nextReview:0, correct:0, total:0 },
+  { id:237, kanji:'を', hira:'を', meaning:'從、把、在', example:'みずをのみます — 喝水', srs:0, nextReview:0, correct:0, total:0 },
+  { id:238, kanji:'えいが', hira:'えいが', meaning:'電影', example:'えいがをみます — 看電影', srs:0, nextReview:0, correct:0, total:0 },
+  { id:239, kanji:'見ます', hira:'みます', meaning:'看', example:'テレビをみます — 看電視', srs:0, nextReview:0, correct:0, total:0 },
+  { id:240, kanji:'しずか', hira:'しずか', meaning:'安靜', example:'このとしょかんはしずかです — 這個圖書館很安靜', srs:0, nextReview:0, correct:0, total:0 },
+  { id:241, kanji:'きれい', hira:'きれい', meaning:'漂亮、乾淨', example:'このはなはきれいです — 這朵花很漂亮', srs:0, nextReview:0, correct:0, total:0 },
+  { id:242, kanji:'まち', hira:'まち', meaning:'城鎮', example:'このまちはふるいです — 這個城鎮很古老', srs:0, nextReview:0, correct:0, total:0 },
+  { id:243, kanji:'とても', hira:'とても', meaning:'非常', example:'とてもたのしいです — 非常開心', srs:0, nextReview:0, correct:0, total:0 },
+  { id:244, kanji:'とし', hira:'とし', meaning:'城市', example:'このとしはにぎやかです — 這個城市很熱鬧', srs:0, nextReview:0, correct:0, total:0 },
+  { id:245, kanji:'にぎやか', hira:'にぎやか', meaning:'熱鬧', example:'このまちはにぎやかです — 這個城鎮很熱鬧', srs:0, nextReview:0, correct:0, total:0 },
+  { id:246, kanji:'日本', hira:'にほん', meaning:'日本', example:'にほんにすんでいます — 住在日本', srs:0, nextReview:0, correct:0, total:0 },
+  { id:247, kanji:'どう', hira:'どう', meaning:'怎麼樣', example:'このケーキはどうですか — 這個蛋糕怎麼樣', srs:0, nextReview:0, correct:0, total:0 },
+  { id:248, kanji:'おおさか', hira:'おおさか', meaning:'大阪', example:'おおさかのたこやきがすきです — 喜歡大阪的章魚燒', srs:0, nextReview:0, correct:0, total:0 },
+  { id:249, kanji:'も', hira:'も', meaning:'都、也', example:'わたしもいきます — 我也去', srs:0, nextReview:0, correct:0, total:0 },
+  { id:250, kanji:'にすんでいます', hira:'にすんでいます', meaning:'住在', example:'とうきょうにすんでいます — 住在東京', srs:0, nextReview:0, correct:0, total:0 },
+  { id:251, kanji:'私', hira:'わたし', meaning:'我', example:'わたしはがくせいです — 我是學生', srs:0, nextReview:0, correct:0, total:0 },
+  { id:252, kanji:'トロント', hira:'とろんと', meaning:'多倫多', example:'トロントにすんでいます — 住在多倫多', srs:0, nextReview:0, correct:0, total:0 },
+  { id:253, kanji:'京都', hira:'きょうと', meaning:'京都', example:'きょうとはきれいです — 京都很漂亮', srs:0, nextReview:0, correct:0, total:0 },
+  { id:254, kanji:'ニューヨーク', hira:'にゅーよーく', meaning:'紐約', example:'ニューヨークにいきます — 去紐約', srs:0, nextReview:0, correct:0, total:0 },
+  { id:255, kanji:'しゅっしん', hira:'しゅっしん', meaning:'來自', example:'とうきょうしゅっしんです — 來自東京', srs:0, nextReview:0, correct:0, total:0 },
+  { id:256, kanji:'はじめまして', hira:'はじめまして', meaning:'很高興認識你', example:'はじめまして、たなかです — 初次見面，我是田中', srs:0, nextReview:0, correct:0, total:0 },
+  { id:257, kanji:'東京', hira:'とうきょう', meaning:'東京', example:'とうきょうにすんでいます — 住在東京', srs:0, nextReview:0, correct:0, total:0 },
+  { id:258, kanji:'おなまえは', hira:'おなまえは', meaning:'您的名字是', example:'おなまえはなんですか — 請問您叫什麼名字', srs:0, nextReview:0, correct:0, total:0 },
+  { id:259, kanji:'それ', hira:'それ', meaning:'那', example:'それはなんですか — 那是什麼', srs:0, nextReview:0, correct:0, total:0 },
+  { id:260, kanji:'中山', hira:'なかやま', meaning:'中山', example:'なかやまさんはせんせいです — 中山先生是老師', srs:0, nextReview:0, correct:0, total:0 },
+  { id:261, kanji:'パスポート', hira:'ぱすぽーと', meaning:'護照', example:'パスポートをみせてください — 請出示護照', srs:0, nextReview:0, correct:0, total:0 },
+  { id:262, kanji:'ぼうし', hira:'ぼうし', meaning:'帽子', example:'ぼうしをかぶります — 戴帽子', srs:0, nextReview:0, correct:0, total:0 },
+  { id:263, kanji:'スマホ', hira:'すまほ', meaning:'手機', example:'スマホでしゃしんをとります — 用手機拍照', srs:0, nextReview:0, correct:0, total:0 },
+  { id:264, kanji:'田中', hira:'たなか', meaning:'田中先生', example:'たなかさんはいしゃです — 田中先生是醫生', srs:0, nextReview:0, correct:0, total:0 },
+  { id:265, kanji:'ちず', hira:'ちず', meaning:'地圖', example:'ちずをみます — 看地圖', srs:0, nextReview:0, correct:0, total:0 },
+  { id:266, kanji:'山口', hira:'やまぐち', meaning:'山口', example:'やまぐちさんはどこにいますか — 山口先生在哪裡', srs:0, nextReview:0, correct:0, total:0 },
+  { id:267, kanji:'きっぷ', hira:'きっぷ', meaning:'票', example:'きっぷをかいます — 買票', srs:0, nextReview:0, correct:0, total:0 },
+  { id:268, kanji:'かさ', hira:'かさ', meaning:'雨傘', example:'あめだからかさをもちます — 因為下雨所以帶傘', srs:0, nextReview:0, correct:0, total:0 },
+  { id:269, kanji:'あそこ', hira:'あそこ', meaning:'那裡', example:'あそこにコンビニがあります — 那裡有便利商店', srs:0, nextReview:0, correct:0, total:0 },
+  { id:270, kanji:'ちかてつ', hira:'ちかてつ', meaning:'地鐵', example:'ちかてつにのります — 搭捷運', srs:0, nextReview:0, correct:0, total:0 },
+  { id:271, kanji:'くうこう', hira:'くうこう', meaning:'機場', example:'くうこうにいきます — 去機場', srs:0, nextReview:0, correct:0, total:0 },
+  { id:272, kanji:'三', hira:'さん', meaning:'三', example:'さんにんいます — 有三個人', srs:0, nextReview:0, correct:0, total:0 },
+  { id:273, kanji:'すみません', hira:'すみません', meaning:'不好意思', example:'すみません、えきはどこですか — 不好意思，請問車站在哪裡', srs:0, nextReview:0, correct:0, total:0 },
+  { id:274, kanji:'はん', hira:'はん', meaning:'半', example:'しちじはんにおきます — 七點半起床', srs:0, nextReview:0, correct:0, total:0 },
+  { id:275, kanji:'なんじ', hira:'なんじ', meaning:'幾點', example:'いまなんじですか — 現在幾點', srs:0, nextReview:0, correct:0, total:0 },
+  { id:276, kanji:'一', hira:'いち', meaning:'一', example:'いちまいください — 請給我一張', srs:0, nextReview:0, correct:0, total:0 },
+  { id:277, kanji:'二', hira:'に', meaning:'二', example:'にほんごをにねんべんきょうしました — 學了兩年日文', srs:0, nextReview:0, correct:0, total:0 },
+  { id:278, kanji:'いま', hira:'いま', meaning:'現在', example:'いまどこですか — 現在在哪裡', srs:0, nextReview:0, correct:0, total:0 },
+  { id:279, kanji:'に', hira:'に', meaning:'二', example:'がっこうにいきます — 去學校', srs:0, nextReview:0, correct:0, total:0 },
+  { id:280, kanji:'じ', hira:'じ', meaning:'字', example:'しちじにおきます — 七點起床', srs:0, nextReview:0, correct:0, total:0 },
+  { id:281, kanji:'いち', hira:'いち', meaning:'一', example:'いちばんすきなたべものはすしです — 最喜歡的食物是壽司', srs:0, nextReview:0, correct:0, total:0 },
+  { id:282, kanji:'なかやま', hira:'なかやま', meaning:'中山', example:'なかやまさんはせんせいです — 中山先生是老師', srs:0, nextReview:0, correct:0, total:0 },
+  { id:283, kanji:'おもしろい', hira:'おもしろい', meaning:'有趣', example:'このえいがはおもしろいです — 這部電影很有趣', srs:0, nextReview:0, correct:0, total:0 },
+  { id:284, kanji:'ともだち', hira:'ともだち', meaning:'朋友', example:'ともだちとあそびます — 和朋友玩', srs:0, nextReview:0, correct:0, total:0 },
+  { id:285, kanji:'あかるい', hira:'あかるい', meaning:'明亮、開朗', example:'このへやはあかるいです — 這個房間很明亮', srs:0, nextReview:0, correct:0, total:0 },
+  { id:286, kanji:'たなか', hira:'たなか', meaning:'田中', example:'たなかさんはいしゃです — 田中先生是醫生', srs:0, nextReview:0, correct:0, total:0 },
+  { id:287, kanji:'くつ', hira:'くつ', meaning:'鞋子', example:'あたらしいくつをかいます — 買新鞋子', srs:0, nextReview:0, correct:0, total:0 },
+  { id:288, kanji:'の', hira:'の', meaning:'的、呢', example:'これはわたしのかばんです — 這是我的包包', srs:0, nextReview:0, correct:0, total:0 },
+  { id:289, kanji:'てぶくろ', hira:'てぶくろ', meaning:'手套', example:'ふゆにてぶくろをします — 冬天戴手套', srs:0, nextReview:0, correct:0, total:0 },
+  { id:290, kanji:'しろい', hira:'しろい', meaning:'白色的', example:'しろいコートがほしいです — 想要白色的外套', srs:0, nextReview:0, correct:0, total:0 },
+  { id:291, kanji:'かばん', hira:'かばん', meaning:'包包', example:'かばんにほんをいれます — 把書放進包包', srs:0, nextReview:0, correct:0, total:0 },
+  { id:292, kanji:'わたしの', hira:'わたしの', meaning:'我的', example:'これはわたしのです — 這是我的', srs:0, nextReview:0, correct:0, total:0 },
+  { id:293, kanji:'コート', hira:'こーと', meaning:'外套', example:'コートをきます — 穿外套', srs:0, nextReview:0, correct:0, total:0 },
+  { id:294, kanji:'あかい', hira:'あかい', meaning:'紅色的', example:'あかいくつがすきです — 喜歡紅色的鞋子', srs:0, nextReview:0, correct:0, total:0 },
+  { id:295, kanji:'いいえ', hira:'いいえ', meaning:'不是', example:'いいえ、ちがいます — 不，不對', srs:0, nextReview:0, correct:0, total:0 },
+  { id:296, kanji:'だいがく', hira:'だいがく', meaning:'大學', example:'だいがくでにほんごをべんきょうします — 在大學學日文', srs:0, nextReview:0, correct:0, total:0 },
+  { id:297, kanji:'えき', hira:'えき', meaning:'車站', example:'えきでまちます — 在車站等', srs:0, nextReview:0, correct:0, total:0 },
+  { id:298, kanji:'デパート', hira:'でぱーと', meaning:'百貨公司', example:'デパートでかいものをします — 在百貨公司購物', srs:0, nextReview:0, correct:0, total:0 },
+  { id:299, kanji:'じゃない', hira:'じゃない', meaning:'不是', example:'これはわたしのじゃないです — 這不是我的', srs:0, nextReview:0, correct:0, total:0 },
+  { id:300, kanji:'ここ', hira:'ここ', meaning:'這裡', example:'ここにすわってください — 請坐這裡', srs:0, nextReview:0, correct:0, total:0 },
+  { id:301, kanji:'バスてい', hira:'バスてい', meaning:'公車站', example:'バスていでバスをまちます — 在公車站等公車', srs:0, nextReview:0, correct:0, total:0 },
+  { id:302, kanji:'コンビニ', hira:'こんびに', meaning:'便利商店', example:'コンビニでおにぎりをかいます — 在便利商店買飯糰', srs:0, nextReview:0, correct:0, total:0 },
+  { id:303, kanji:'どこ', hira:'どこ', meaning:'哪裡', example:'どこにいきますか — 去哪裡', srs:0, nextReview:0, correct:0, total:0 },
+  { id:304, kanji:'ホテル', hira:'ほてる', meaning:'飯店', example:'ホテルにとまります — 住飯店', srs:0, nextReview:0, correct:0, total:0 },
+  { id:305, kanji:'ブラジルじん', hira:'ブラジルじん', meaning:'巴西人', example:'かれはブラジルじんです — 他是巴西人', srs:0, nextReview:0, correct:0, total:0 },
+  { id:306, kanji:'ちいさい', hira:'ちいさい', meaning:'小', example:'このくつはちいさいです — 這雙鞋很小', srs:0, nextReview:0, correct:0, total:0 },
+  { id:307, kanji:'ブラジル', hira:'ぶらじる', meaning:'巴西', example:'ブラジルにいきたいです — 想去巴西', srs:0, nextReview:0, correct:0, total:0 },
+  { id:308, kanji:'ベトナム', hira:'べとなむ', meaning:'越南', example:'ベトナムのりょうりがすきです — 喜歡越南料理', srs:0, nextReview:0, correct:0, total:0 },
+  { id:309, kanji:'ベトナムじん', hira:'ベトナムじん', meaning:'越南人', example:'かのじょはベトナムじんです — 她是越南人', srs:0, nextReview:0, correct:0, total:0 },
+  { id:310, kanji:'アメリカじん', hira:'アメリカじん', meaning:'美國人', example:'かのじょはアメリカじんです — 她是美國人', srs:0, nextReview:0, correct:0, total:0 },
+  { id:311, kanji:'カナダ', hira:'かなだ', meaning:'加拿大', example:'カナダはさむいです — 加拿大很冷', srs:0, nextReview:0, correct:0, total:0 },
+  { id:312, kanji:'カナダじん', hira:'カナダじん', meaning:'加拿大人', example:'ともだちはカナダじんです — 朋友是加拿大人', srs:0, nextReview:0, correct:0, total:0 },
+  { id:313, kanji:'にほんじん', hira:'にほんじん', meaning:'日本人', example:'かれはにほんじんです — 他是日本人', srs:0, nextReview:0, correct:0, total:0 },
+  { id:314, kanji:'おおきい', hira:'おおきい', meaning:'大', example:'このかばんはおおきいです — 這個包包很大', srs:0, nextReview:0, correct:0, total:0 },
+  { id:315, kanji:'にほん', hira:'にほん', meaning:'日本', example:'にほんにすんでいます — 住在日本', srs:0, nextReview:0, correct:0, total:0 },
+  { id:316, kanji:'アメリカ', hira:'あめりか', meaning:'美國', example:'アメリカにいきます — 去美國', srs:0, nextReview:0, correct:0, total:0 },
+  { id:317, kanji:'ケーキ', hira:'けーき', meaning:'蛋糕', example:'ケーキをたべます — 吃蛋糕', srs:0, nextReview:0, correct:0, total:0 },
+  { id:318, kanji:'か', hira:'か', meaning:'嗎', example:'いきますか — 你去嗎', srs:0, nextReview:0, correct:0, total:0 },
+  { id:319, kanji:'ピザ', hira:'ぴざ', meaning:'披薩', example:'ピザをちゅうもんします — 點披薩', srs:0, nextReview:0, correct:0, total:0 },
+  { id:320, kanji:'はい', hira:'はい', meaning:'是的', example:'はい、そうです — 是的，沒錯', srs:0, nextReview:0, correct:0, total:0 },
+  { id:321, kanji:'おいしい', hira:'おいしい', meaning:'好吃', example:'このラーメンはおいしいです — 這碗拉麵很好吃', srs:0, nextReview:0, correct:0, total:0 },
+  { id:322, kanji:'サラダ', hira:'さらだ', meaning:'沙拉', example:'サラダをたべます — 吃沙拉', srs:0, nextReview:0, correct:0, total:0 },
+  { id:323, kanji:'ラーメン', hira:'らーめん', meaning:'拉麵', example:'ラーメンがだいすきです — 非常喜歡拉麵', srs:0, nextReview:0, correct:0, total:0 },
+  { id:324, kanji:'これ', hira:'これ', meaning:'這個', example:'これはなんですか — 這是什麼', srs:0, nextReview:0, correct:0, total:0 },
+  { id:325, kanji:'は', hira:'は', meaning:'是、有', example:'わたしはがくせいです — 我是學生', srs:0, nextReview:0, correct:0, total:0 },
+  { id:326, kanji:'またあした', hira:'またあした', meaning:'明天見', example:'またあした、さようなら — 明天見，再見', srs:0, nextReview:0, correct:0, total:0 },
+  { id:327, kanji:'なおみ', hira:'なおみ', meaning:'直美', example:'なおみさんはきれいです — 直美很漂亮', srs:0, nextReview:0, correct:0, total:0 },
+  { id:328, kanji:'こんばんは', hira:'こんばんは', meaning:'晚上好', example:'こんばんは、げんきですか — 晚上好，你好嗎', srs:0, nextReview:0, correct:0, total:0 },
+  { id:329, kanji:'さん', hira:'さん', meaning:'小姐、先生', example:'たなかさんはせんせいです — 田中先生是老師', srs:0, nextReview:0, correct:0, total:0 },
+  { id:330, kanji:'はな', hira:'はな', meaning:'花', example:'はなさんはがくせいです — 花是學生', srs:0, nextReview:0, correct:0, total:0 },
+  { id:331, kanji:'けん', hira:'けん', meaning:'健', example:'けんさんはかっこいいです — 健很帥', srs:0, nextReview:0, correct:0, total:0 },
+  { id:332, kanji:'こんにちは', hira:'こんにちは', meaning:'你好', example:'こんにちは、たなかさん — 你好，田中先生', srs:0, nextReview:0, correct:0, total:0 },
+  { id:333, kanji:'がくせい', hira:'がくせい', meaning:'學生', example:'わたしはがくせいです — 我是學生', srs:0, nextReview:0, correct:0, total:0 },
+  { id:334, kanji:'ひと', hira:'ひと', meaning:'人', example:'あのひとはだれですか — 那個人是誰', srs:0, nextReview:0, correct:0, total:0 },
+  { id:335, kanji:'べんごし', hira:'べんごし', meaning:'律師', example:'かのじょはべんごしです — 她是律師', srs:0, nextReview:0, correct:0, total:0 },
+  { id:336, kanji:'せんせい', hira:'せんせい', meaning:'老師', example:'せんせいにしつもんします — 向老師提問', srs:0, nextReview:0, correct:0, total:0 },
+  { id:337, kanji:'かっこいい', hira:'かっこいい', meaning:'酷', example:'このジャケットはかっこいいです — 這件夾克很帥', srs:0, nextReview:0, correct:0, total:0 },
+  { id:338, kanji:'いしゃ', hira:'いしゃ', meaning:'醫生', example:'いしゃにいきます — 去看醫生', srs:0, nextReview:0, correct:0, total:0 },
+  { id:339, kanji:'やさしい', hira:'やさしい', meaning:'溫柔', example:'かのじょはやさしいです — 她很溫柔', srs:0, nextReview:0, correct:0, total:0 },
+  { id:340, kanji:'です', hira:'です', meaning:'是', example:'わたしはがくせいです — 我是學生', srs:0, nextReview:0, correct:0, total:0 },
+  { id:341, kanji:'ごはん', hira:'ごはん', meaning:'飯', example:'ごはんをたべます — 吃飯', srs:0, nextReview:0, correct:0, total:0 },
+  { id:342, kanji:'と', hira:'と', meaning:'和、跟', example:'ともだちとえいがをみます — 和朋友看電影', srs:0, nextReview:0, correct:0, total:0 },
+  { id:343, kanji:'ください', hira:'ください', meaning:'請', example:'みずをください — 請給我水', srs:0, nextReview:0, correct:0, total:0 },
+  { id:344, kanji:'おちゃ', hira:'おちゃ', meaning:'茶', example:'おちゃをのみます — 喝茶', srs:0, nextReview:0, correct:0, total:0 },
+  { id:345, kanji:'みず', hira:'みず', meaning:'水', example:'みずをのみます — 喝水', srs:0, nextReview:0, correct:0, total:0 },
+  { id:346, kanji:'すし', hira:'すし', meaning:'壽司', example:'すしをたべます — 吃壽司', srs:0, nextReview:0, correct:0, total:0 }
+];
+
+function loadState() {
+  try {
+    const s5 = localStorage.getItem('jvocab_v5');
+    if (s5) return JSON.parse(s5);
+
+    // 合併舊版 v4 或 v3
+    const old = (() => {
+      try { const s = localStorage.getItem('jvocab_v4'); if (s) return JSON.parse(s); } catch(e) {}
+      try { const s = localStorage.getItem('jvocab_v3'); if (s) return JSON.parse(s); } catch(e) {}
+      return null;
+    })();
+
+    if (old) {
+      const userWords = (old.words || []).filter(w => w.id >= 347);
+      const merged = [
+        ...DEFAULT_WORDS.map(w => {
+          const oldWord = (old.words || []).find(o => o.id === w.id);
+          return oldWord ? { ...w, srs: oldWord.srs, nextReview: oldWord.nextReview, correct: oldWord.correct, total: oldWord.total } : w;
+        }),
+        ...userWords
+      ];
+      const nextId = Math.max(347, ...merged.map(w => w.id)) + 1;
+      return { ...old, words: merged, nextId };
+    }
+  } catch(e) {}
+  return {
+    words: DEFAULT_WORDS.map(w => ({...w})),
+    streak: 0,
+    lastStudyDate: '',
+    dailyLog: {},
+    quizStats: { correct: 0, total: 0 },
+    nextId: 347,
+  };
+}
+function saveState() {
+  try { localStorage.setItem('jvocab_v5', JSON.stringify(state)); } catch(e) {}
+}
+
+let state = loadState();
+
+// ─── STREAK ──────────────────────────────────────────
+function checkStreak() {
+  const today = new Date().toDateString();
+  const yesterday = new Date(Date.now() - 86400000).toDateString();
+  if (state.lastStudyDate === today) return;
+  if (state.lastStudyDate === yesterday) {
+    state.streak++;
+  } else if (state.lastStudyDate !== today) {
+    if (state.lastStudyDate !== yesterday) state.streak = 1;
+  }
+  state.lastStudyDate = today;
+  saveState();
+}
+function markStudyToday() {
+  const today = new Date().toDateString();
+  state.dailyLog[today] = (state.dailyLog[today] || 0) + 1;
+  state.lastStudyDate = today;
+  if (!state.streakChecked) { checkStreak(); state.streakChecked = true; }
+  saveState();
+  updateStreakBadge();
+}
+function updateStreakBadge() {
+  document.getElementById('streak-num').textContent = state.streak;
+  document.getElementById('pr-streak').textContent = state.streak;
+}
+
+// ─── SRS ─────────────────────────────────────────────
+const SRS_INTERVALS = [0, 1, 3, 7, 14, 30]; // days
+function getDueWords() {
+  const now = Date.now();
+  return state.words.filter(w => w.nextReview <= now);
+}
+function rateWord(word, rating) {
+  word.total = (word.total || 0) + 1;
+  if (rating === 'easy') {
+    word.srs = Math.min(word.srs + 2, 5);
+    word.correct = (word.correct || 0) + 1;
+  } else if (rating === 'ok') {
+    word.srs = Math.min(word.srs + 1, 5);
+    word.correct = (word.correct || 0) + 1;
+  } else {
+    word.srs = Math.max(word.srs - 1, 0);
+  }
+  const days = SRS_INTERVALS[word.srs] || 0;
+  word.nextReview = Date.now() + days * 86400000;
+  saveState();
+}
+
+// ─── TABS ─────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+  if (tab === 'flash') initFlash();
+  if (tab === 'quiz') initQuiz();
+  if (tab === 'words') renderWordList();
+  if (tab === 'progress') renderProgress();
+  if (tab === 'news') loadNews();
+}
+
+// ─── FLASHCARD ────────────────────────────────────────
+let fcQueue = [], fcIdx = 0, fcFlipped = false;
+let fcMode = 'jp'; // 'jp' = 日文正面, 'zh' = 中文正面
+
+function setCardMode(mode) {
+  fcMode = mode;
+  document.getElementById('mode-jp').classList.toggle('active', mode === 'jp');
+  document.getElementById('mode-zh').classList.toggle('active', mode === 'zh');
+  // restart with same queue, just flip display
+  fcIdx = 0; fcFlipped = false;
+  showCard();
+}
+
+function initFlash() {
+  fcQueue = getDueWords();
+  if (fcQueue.length === 0) fcQueue = [...state.words];
+  fcQueue = shuffle([...fcQueue]);
+  fcIdx = 0; fcFlipped = false;
+  updateFCStats();
+  showCard();
+}
+function updateFCStats() {
+  document.getElementById('fc-total').textContent = state.words.length;
+  document.getElementById('fc-today').textContent = state.dailyLog[new Date().toDateString()] || 0;
+  document.getElementById('fc-due').textContent = getDueWords().length;
+}
+function showCard() {
+  const fc = document.getElementById('flashcard');
+  fc.classList.remove('flipped');
+  document.getElementById('card-actions').style.display = 'none';
+  document.getElementById('card-area').style.display = '';
+  document.getElementById('fc-done').style.display = 'none';
+  fcFlipped = false;
+
+  if (fcIdx >= fcQueue.length) {
+    document.getElementById('card-area').style.display = 'none';
+    document.getElementById('fc-done').style.display = 'block';
+    document.getElementById('fc-counter').textContent = '完成！';
+    document.getElementById('fc-progress').style.width = '100%';
+    return;
+  }
+
+  const w = fcQueue[fcIdx];
+  document.getElementById('fc-counter').textContent = `卡片 ${fcIdx + 1} / ${fcQueue.length}`;
+  document.getElementById('fc-progress').style.width = `${(fcIdx / fcQueue.length) * 100}%`;
+  document.getElementById('fc-example').textContent = w.example || '';
+
+  if (fcMode === 'jp') {
+    document.getElementById('fc-front-tag').textContent = '正面 — 日文';
+    document.getElementById('fc-front-main').textContent = w.kanji;
+    document.getElementById('fc-front-main').className = 'card-kanji';
+    const frontSubJp = document.getElementById('fc-front-sub');
+    frontSubJp.textContent = w.srs >= 4 ? '' : w.hira;
+    frontSubJp.style.cssText = '';
+    document.getElementById('fc-audio-row').style.display = '';
+    document.getElementById('fc-back-tag').textContent = '背面 — 中文';
+    document.getElementById('fc-back-main').textContent = w.meaning;
+    document.getElementById('fc-back-main').className = 'card-meaning';
+    document.getElementById('fc-back-sub').textContent = '';
+  } else {
+    document.getElementById('fc-front-tag').textContent = '正面 — 中文';
+    document.getElementById('fc-front-main').textContent = w.meaning;
+    document.getElementById('fc-front-main').className = 'card-meaning';
+    const zhExample = w.example ? (w.example.includes('—') ? w.example.split('—')[1].trim() : '') : '';
+    const frontSub = document.getElementById('fc-front-sub');
+    frontSub.textContent = zhExample;
+    frontSub.style.cssText = 'font-size:13px; color:var(--text3); font-family:"DM Sans",sans-serif;';
+    document.getElementById('fc-audio-row').style.display = 'none';
+    document.getElementById('fc-back-tag').textContent = '背面 — 日文';
+    document.getElementById('fc-back-main').textContent = w.kanji;
+    document.getElementById('fc-back-main').className = 'card-kanji';
+    document.getElementById('fc-back-sub').textContent = w.srs >= 4 ? '' : w.hira;
+  }
+}
+function flipCard() {
+  if (fcIdx >= fcQueue.length) return;
+  fcFlipped = !fcFlipped;
+  document.getElementById('flashcard').classList.toggle('flipped', fcFlipped);
+  document.getElementById('card-actions').style.display = fcFlipped ? 'flex' : 'none';
+  // 中文→日文模式翻到背面時自動朗讀
+  if (fcFlipped && fcMode === 'zh' && window.speechSynthesis) {
+    const w = fcQueue[fcIdx];
+    const utt = new SpeechSynthesisUtterance(w.kanji);
+    utt.lang = 'ja-JP'; utt.rate = 0.85;
+    const voices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('ja'));
+    if (voices.length) utt.voice = voices[0];
+    speechSynthesis.speak(utt);
+  }
+}
+function rateCard(rating) {
+  const w = fcQueue[fcIdx];
+  rateWord(w, rating);
+  markStudyToday();
+  fcIdx++;
+  updateFCStats();
+  const area = document.getElementById('card-area');
+  area.style.transition = 'opacity 0.2s';
+  area.style.opacity = '0';
+  setTimeout(() => {
+    const fc = document.getElementById('flashcard');
+    fc.style.transition = 'none';
+    fc.classList.remove('flipped');
+    fcFlipped = false;
+    document.getElementById('card-actions').style.display = 'none';
+    showCard();
+    setTimeout(() => {
+      fc.style.transition = '';
+      area.style.opacity = '1';
+    }, 50);
+  }, 200);
+}
+
+// ─── QUIZ ─────────────────────────────────────────────
+let qzWord = null, qzAnswered = false;
+let qzSessionCorrect = 0, qzSessionTotal = 0;
+let qzMode = 'jp'; // 'jp' = 看日文猜中文, 'zh' = 看中文猜日文
+
+function setQuizMode(mode) {
+  qzMode = mode;
+  document.getElementById('qz-mode-jp').classList.toggle('active', mode === 'jp');
+  document.getElementById('qz-mode-zh').classList.toggle('active', mode === 'zh');
+  qzWord = null;
+  nextQuiz();
+}
+
+function initQuiz() {
+  qzSessionCorrect = state.quizStats.correct;
+  qzSessionTotal = state.quizStats.total;
+  qzAnswered = false;
+  nextQuiz();
+}
+function nextQuiz() {
+  if (state.words.length < 2) {
+    document.getElementById('qz-options').innerHTML = '<div class="empty">請先在「單字庫」頁新增至少2個單字</div>';
+    return;
+  }
+  qzAnswered = false;
+
+  // SRS 加權：等級低的出現機率高
+  const lastId = qzWord ? qzWord.id : null;
+  const lastFcId = fcQueue[fcIdx] ? fcQueue[fcIdx].id : null;
+  const pool = [];
+  state.words.forEach(w => {
+    if (w.id === lastId) return; // 避免同題連出
+    if (w.id === lastFcId) return; // 避免與翻卡當前同字
+    const weight = Math.max(1, 6 - (w.srs || 0)); // srs=0 → 6次, srs=5 → 1次
+    for (let i = 0; i < weight; i++) pool.push(w);
+  });
+  qzWord = pool[Math.floor(Math.random() * pool.length)] || state.words[0];
+
+  if (qzMode === 'jp') {
+    document.getElementById('qz-word').textContent = qzWord.kanji;
+    document.getElementById('qz-hira').textContent = qzWord.srs >= 4 ? '' : qzWord.hira;
+  } else {
+    document.getElementById('qz-word').textContent = qzWord.meaning;
+    document.getElementById('qz-hira').textContent = '';
+  }
+
+  document.getElementById('qz-result').style.display = 'none';
+  document.getElementById('qz-next').style.display = 'none';
+
+  const distractors = shuffle(state.words.filter(w => w.id !== qzWord.id)).slice(0, 3);
+  const options = shuffle([qzWord, ...distractors]);
+  const container = document.getElementById('qz-options');
+  container.innerHTML = '';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'quiz-opt';
+    btn.textContent = qzMode === 'jp' ? opt.meaning : opt.kanji;
+    btn.dataset.id = opt.id;
+    btn.onclick = () => answerQuiz(opt, btn);
+    container.appendChild(btn);
+  });
+  updateQuizStats();
+}
+function answerQuiz(chosen, btn) {
+  if (qzAnswered) return;
+  qzAnswered = true;
+  const correct = chosen.id === qzWord.id;
+  state.quizStats.total++;
+  qzSessionTotal++;
+  if (correct) { state.quizStats.correct++; qzSessionCorrect++; }
+  const correctText = qzMode === 'jp' ? qzWord.meaning : qzWord.kanji;
+  document.querySelectorAll('.quiz-opt').forEach(b => {
+    b.classList.add('disabled');
+    if (b.dataset.id == qzWord.id) b.classList.add('correct');
+    else if (b === btn && !correct) b.classList.add('wrong');
+  });
+  const res = document.getElementById('qz-result');
+  res.style.display = 'block';
+  res.className = 'quiz-result ' + (correct ? 'correct' : 'wrong');
+  res.textContent = correct ? '✓ 答對了！' : `✗ 正確答案是：${correctText}`;
+  document.getElementById('qz-next').style.display = 'block';
+  rateWord(qzWord, correct ? 'ok' : 'hard');
+  markStudyToday();
+  saveState();
+  updateQuizStats();
+}
+function updateQuizStats() {
+  document.getElementById('qz-correct').textContent = state.quizStats.correct;
+  document.getElementById('qz-total-q').textContent = state.quizStats.total;
+  const acc = state.quizStats.total > 0
+    ? Math.round(state.quizStats.correct / state.quizStats.total * 100) + '%'
+    : '—';
+  document.getElementById('qz-acc').textContent = acc;
+}
+
+// ─── WORDS ────────────────────────────────────────────
+let editingId = null;
+
+function renderWordList() {
+  const list = document.getElementById('word-list');
+  const q = (document.getElementById('word-search')?.value || '').toLowerCase();
+  const filtered = q ? state.words.filter(w =>
+    w.kanji.toLowerCase().includes(q) ||
+    w.hira.includes(q) ||
+    w.meaning.includes(q)
+  ) : state.words;
+
+  document.getElementById('word-count').textContent = q ? `${filtered.length} / ${state.words.length} 個` : `${state.words.length} 個`;
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty">沒有符合的單字</div>';
+    return;
+  }
+  list.innerHTML = filtered.map(w => {
+    const srsLabel = w.srs >= 4 ? `<span class="srs-easy">熟練 ★${w.srs}</span>` :
+                     w.srs >= 2 ? `<span class="srs-ok">學習中 ★${w.srs}</span>` :
+                                  `<span class="srs-hard">需複習 ★${w.srs}</span>`;
+    const exampleHtml = w.example ? `<div style="font-size:11px;color:var(--text3);margin-top:3px;line-height:1.5">${w.example}</div>` : '';
+    return `<div class="word-item" style="align-items:flex-start">
+      <div class="word-jp" style="min-width:52px;padding-top:2px">${w.kanji}</div>
+      <div class="word-info" style="flex:1">
+        <div class="word-hira">${w.hira}</div>
+        <div class="word-zh">${w.meaning}</div>
+        <div class="word-srs">${srsLabel}</div>
+        ${exampleHtml}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;padding-top:2px">
+        <button class="word-del" style="color:var(--accent3);font-size:14px" onclick="speakWordById(${w.id})">♪</button>
+        <button class="word-del" style="color:var(--accent2);font-size:14px" onclick="openEditModal(${w.id})">✎</button>
+        <button class="word-del" onclick="deleteWord(${w.id})">×</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function speakWordById(id) {
+  const w = state.words.find(w => w.id === id);
+  if (!w || !window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(w.kanji);
+  utt.lang = 'ja-JP'; utt.rate = 0.85;
+  const voices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('ja'));
+  if (voices.length) utt.voice = voices[0];
+  speechSynthesis.speak(utt);
+}
+
+function openEditModal(id) {
+  const w = state.words.find(w => w.id === id);
+  if (!w) return;
+  editingId = id;
+  document.getElementById('edit-kanji').value = w.kanji;
+  document.getElementById('edit-hira').value = w.hira;
+  document.getElementById('edit-meaning').value = w.meaning;
+  document.getElementById('edit-example').value = w.example || '';
+  document.getElementById('edit-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('edit-kanji').focus(), 100);
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').style.display = 'none';
+  editingId = null;
+}
+
+function saveEditWord() {
+  const kanji = document.getElementById('edit-kanji').value.trim();
+  const hira = document.getElementById('edit-hira').value.trim();
+  const meaning = document.getElementById('edit-meaning').value.trim();
+  const example = document.getElementById('edit-example').value.trim();
+  if (!kanji || !meaning) { showToast('請輸入漢字和中文意思'); return; }
+  const w = state.words.find(w => w.id === editingId);
+  if (!w) return;
+  w.kanji = kanji; w.hira = hira; w.meaning = meaning; w.example = example;
+  saveState();
+  closeEditModal();
+  renderWordList();
+  showToast('✓ 單字已更新！');
+}
+
+document.getElementById('edit-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeEditModal();
+});
+function addWord() {
+  const kanji = document.getElementById('in-kanji').value.trim();
+  const hira = document.getElementById('in-hira').value.trim();
+  const meaning = document.getElementById('in-meaning').value.trim();
+  const example = document.getElementById('in-example').value.trim();
+  if (!kanji || !meaning) { showToast('請輸入漢字和中文意思'); return; }
+  state.words.push({ id: state.nextId++, kanji, hira, meaning, example, srs: 0, nextReview: 0, correct: 0, total: 0 });
+  ['in-kanji','in-hira','in-meaning','in-example'].forEach(id => document.getElementById(id).value = '');
+  saveState();
+  renderWordList();
+  showToast('✓ 單字已新增！');
+}
+function deleteWord(id) {
+  const word = state.words.find(w => w.id === id);
+  if (!confirm(`確定要刪除「${word ? word.kanji : ''}」嗎？`)) return;
+  state.words = state.words.filter(w => w.id !== id);
+  saveState();
+  renderWordList();
+}
+
+// ─── PROGRESS ─────────────────────────────────────────
+function renderProgress() {
+  updateStreakBadge();
+  document.getElementById('pr-total-learned').textContent = state.words.filter(w => w.srs > 0).length;
+  const acc = state.quizStats.total > 0
+    ? Math.round(state.quizStats.correct / state.quizStats.total * 100) + '%' : '—';
+  document.getElementById('pr-accuracy').textContent = acc;
+
+  // Bar chart — last 14 days
+  const chart = document.getElementById('bar-chart');
+  const days = [];
+  const maxVal = 10;
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000);
+    const key = d.toDateString();
+    const val = state.dailyLog[key] || 0;
+    const label = i === 0 ? '今' : (d.getMonth()+1)+'/'+(d.getDate());
+    days.push({ val, label });
+  }
+  const max = Math.max(...days.map(d => d.val), 1);
+  chart.innerHTML = days.map(d => `
+    <div class="bar-col">
+      <div class="bar-fill" style="height:${Math.round(d.val/max*68)}px; opacity:${d.val>0?1:0.15}"></div>
+      <div class="bar-day">${d.label}</div>
+    </div>`).join('');
+
+  // SRS bars
+  const counts = [0,0,0,0,0,0];
+  state.words.forEach(w => counts[w.srs || 0]++);
+  const srsLabels = ['新單字','初學','學習中','熟悉','精通','完全'];
+  const srsColors = ['var(--danger)','var(--accent)','var(--accent)','var(--accent2)','var(--accent3)','var(--accent3)'];
+  const total = state.words.length || 1;
+  document.getElementById('srs-bars').innerHTML = srsLabels.map((l,i) => `
+    <div class="srs-bar-row">
+      <div class="srs-bar-label">${l}</div>
+      <div class="srs-bar-track">
+        <div class="srs-bar-fill" style="width:${Math.round(counts[i]/total*100)}%; background:${srsColors[i]}"></div>
+      </div>
+      <div class="srs-bar-count">${counts[i]}</div>
+    </div>`).join('');
+
+  // Goal
+  const todayCount = state.dailyLog[new Date().toDateString()] || 0;
+  const goal = 10;
+  document.getElementById('goal-text').textContent = `${Math.min(todayCount, goal)} / ${goal}`;
+  document.getElementById('goal-fill').style.width = Math.min(todayCount/goal*100, 100) + '%';
+
+  initReminderUI();
+}
+
+// ─── AUDIO ────────────────────────────────────────────
+function speakWord(e) {
+  e.stopPropagation();
+  if (!window.speechSynthesis) { showToast('您的瀏覽器不支援語音'); return; }
+  const word = fcQueue[fcIdx] || null;
+  if (!word) return;
+  const utt = new SpeechSynthesisUtterance(word.kanji);
+  utt.lang = 'ja-JP'; utt.rate = 0.85;
+  const voices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('ja'));
+  if (voices.length) utt.voice = voices[0];
+  speechSynthesis.speak(utt);
+}
+
+// ─── NHK NEWS ────────────────────────────────────────
+let newsLoaded = false;
+let newsLevel = 'easy'; // 'easy' = やさしい日本語, 'hard' = NHK Web
+let currentSpeech = null;
+
+const NEWS_SOURCES = {
+  easy: {
+    rss: 'https://watanoc.com/feed',
+    link: 'https://watanoc.com',
+    tag: '🟢 Watanoc やさしい日本語',
+    fallbackLink: 'https://watanoc.com',
+  },
+  hard: {
+    rss: 'https://www3.nhk.or.jp/rss/news/cat0.xml',
+    link: 'https://news.web.nhk/newsweb',
+    tag: '🔴 NHK Web',
+    fallbackLink: 'https://news.web.nhk/newsweb',
+  }
+};
+
+function setNewsLevel(level) {
+  newsLevel = level;
+  document.getElementById('news-mode-easy').classList.toggle('active', level === 'easy');
+  document.getElementById('news-mode-hard').classList.toggle('active', level === 'hard');
+  newsLoaded = false;
+  loadNews();
+}
+
+function newsCardHTML(i, title, body, date, link, tag) {
+  const noteKey = 'news_note_' + newsLevel + '_' + i;
+  const savedNote = state.newsNotes && state.newsNotes[noteKey] || '';
+  const safeTitle = escHtml(title);
+  const safeBody = escHtml(body);
+  const speakText = escHtml(title + '。' + (body || ''));
+  return `<div class="news-card">
+    <div class="news-date">${date}</div>
+    <span class="news-tag">${tag}</span>
+
+    <div style="padding:0 14px 12px">
+      <div style="font-family:'Noto Serif JP',serif;font-size:17px;font-weight:700;line-height:1.6;color:var(--text);margin-bottom:10px">${title}</div>
+      <div style="font-family:'Noto Serif JP',serif;font-size:15px;line-height:1.9;color:var(--text2)">${body || '（摘要無法取得，請點下方連結閱讀全文）'}</div>
+    </div>
+
+    <div style="padding:0 14px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="audio-btn" data-speak="${speakText}" id="news-speak-${i}" onclick="speakNewsBtn(this)">
+        <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path d="M11 3a1 1 0 0 0-1.447-.894L4.618 5H3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h1.618l4.935 2.894A1 1 0 0 0 11 17V3z"/><path d="M13.5 7a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-1 0v-5a.5.5 0 0 1 .5-.5zm2-2a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-1 0v-9a.5.5 0 0 1 .5-.5z"/></svg>
+        朗讀
+      </button>
+      <button class="audio-btn" onclick="stopSpeech()" style="color:var(--danger);border-color:rgba(247,110,110,0.3)">
+        ■ 停止
+      </button>
+      <a class="news-link" href="${link}" target="_blank" style="margin-left:auto">NHK で読む →</a>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding:12px 14px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:6px;letter-spacing:0.3px">我的翻譯筆記</div>
+      <textarea
+        id="note-${i}"
+        placeholder="在這裡貼上或輸入你查到的中文翻譯…"
+        onchange="saveNewsNote('${newsLevel}_${i}', this.value)"
+        style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);
+               color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;padding:10px 12px;
+               resize:vertical;min-height:72px;outline:none;line-height:1.6;transition:border-color 0.15s"
+        onfocus="this.style.borderColor='var(--accent2)'"
+        onblur="this.style.borderColor='var(--border)'"
+      >${savedNote}</textarea>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding:10px 14px;display:flex;justify-content:flex-end">
+      <button class="news-add-word-btn" onclick="openNewsModal('${safeTitle}')">＋ 加入單字</button>
+    </div>
+  </div>`;
+}
+
+async function loadNews() {
+  if (newsLoaded) return;
+  if (!state.newsNotes) { state.newsNotes = {}; }
+  const loading = document.getElementById('news-loading');
+  const list = document.getElementById('news-list');
+  loading.style.display = 'block';
+  list.innerHTML = '';
+
+  const src = NEWS_SOURCES[newsLevel];
+  const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(src.rss);
+
+  try {
+    const res = await fetch(proxyUrl);
+    const data = await res.json();
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(data.contents, 'text/xml');
+    const items = Array.from(xml.querySelectorAll('item')).slice(0, 8);
+    if (items.length === 0) throw new Error('no items');
+
+    loading.style.display = 'none';
+    newsLoaded = true;
+
+    list.innerHTML = items.map((item, i) => {
+      const title = item.querySelector('title')?.textContent || '';
+      const desc = item.querySelector('description')?.textContent?.replace(/<[^>]*>/g,'').trim() || '';
+      // 進階模式連結指向 NHK Web
+      const articleLink = newsLevel === 'hard' ? src.link : (item.querySelector('link')?.textContent || src.fallbackLink);
+      const pubDate = item.querySelector('pubDate')?.textContent || '';
+      const date = pubDate ? new Date(pubDate).toLocaleDateString('zh-TW', { month:'numeric', day:'numeric', weekday:'short' }) : '';
+      return newsCardHTML(i, title, desc, date, articleLink, src.tag);
+    }).join('');
+
+  } catch(e) {
+    loading.style.display = 'none';
+    list.innerHTML = renderNewsFallback();
+    newsLoaded = true;
+  }
+}
+
+function renderNewsFallback() {
+  if (!state.newsNotes) state.newsNotes = {};
+  const src = NEWS_SOURCES[newsLevel];
+  const samples = newsLevel === 'easy' ? [
+    { title: '日本のお正月（おしょうがつ）', body: '日本では１月１日はお正月（おしょうがつ）です。家族（かぞく）でごちそうを食（た）べます。「おせち料理（りょうり）」という特別（とくべつ）な食（た）べものがあります。' },
+    { title: '日本のコンビニについて', body: 'コンビニは「コンビニエンスストア」の短（みじか）い言葉（ことば）です。日本（にほん）にはたくさんのコンビニがあります。２４時間（じかん）あいています。食（た）べものや飲（の）みものが買（か）えます。' },
+    { title: '桜（さくら）の季節（きせつ）', body: '春（はる）になると、日本（にほん）では桜（さくら）の花（はな）が咲（さ）きます。人々（ひとびと）は公園（こうえん）で花見（はなみ）をします。友達（ともだち）や家族（かぞく）と一緒（いっしょ）に外（そと）でご飯（はん）を食（た）べます。' },
+  ] : [
+    { title: '政府が新たな経済対策を発表', body: '政府は本日、総額３兆円規模の経済対策を発表した。物価高騰への対応や中小企業支援を柱とし、来月から順次実施される見通しだ。' },
+    { title: '日本銀行が金融政策を維持', body: '日本銀行は金融政策決定会合を開き、現行の金融緩和政策を維持することを決定した。国内外の経済動向を注視しながら、適切な政策運営を続けるとしている。' },
+    { title: '国内の観光業が回復傾向', body: '観光庁によると、国内旅行者数が昨年比で大幅に増加しており、コロナ禍前の水準に近づいていることが分かった。インバウンド需要も堅調に推移している。' },
+  ];
+  return `<div style="padding:8px 0 12px;font-size:12px;color:var(--accent);text-align:center">⚠️ 無法載入即時新聞，顯示練習例文</div>` +
+    samples.map((s, i) => newsCardHTML('f'+i, s.title, s.body, '今日', src.fallbackLink, src.tag)).join('');
+}
+
+function speakNewsBtn(btn) {
+  if (!window.speechSynthesis) { showToast('瀏覽器不支援語音'); return; }
+  stopSpeech();
+  const text = btn.dataset.speak.replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = 'ja-JP'; utt.rate = 0.82;
+  const voices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('ja'));
+  if (voices.length) utt.voice = voices[0];
+  btn.style.color = 'var(--accent3)';
+  btn.style.borderColor = 'rgba(109,232,196,0.4)';
+  utt.onend = () => { btn.style.color = ''; btn.style.borderColor = ''; };
+  speechSynthesis.speak(utt);
+}
+
+function speakNews(i, text) {
+  if (!window.speechSynthesis) { showToast('瀏覽器不支援語音'); return; }
+  stopSpeech();
+  const decoded = text.replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/&amp;/g,'&');
+  const utt = new SpeechSynthesisUtterance(decoded);
+  utt.lang = 'ja-JP'; utt.rate = 0.82;
+  const voices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('ja'));
+  if (voices.length) utt.voice = voices[0];
+  const btn = document.getElementById('news-speak-' + i);
+  if (btn) { btn.style.color = 'var(--accent3)'; btn.style.borderColor = 'rgba(109,232,196,0.4)'; }
+  utt.onend = () => { if (btn) { btn.style.color = ''; btn.style.borderColor = ''; } };
+  currentSpeech = utt;
+  speechSynthesis.speak(utt);
+}
+
+function stopSpeech() {
+  if (window.speechSynthesis) speechSynthesis.cancel();
+}
+
+function saveNewsNote(key, val) {
+  if (!state.newsNotes) state.newsNotes = {};
+  state.newsNotes['news_note_' + key] = val;
+  saveState();
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function openNewsModal(prefillTitle) {
+  document.getElementById('nm-kanji').value = '';
+  document.getElementById('nm-hira').value = '';
+  document.getElementById('nm-meaning').value = '';
+  document.getElementById('nm-example').value = '';
+  document.getElementById('nm-source-label').textContent = '來源：' + prefillTitle.replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/&amp;/g,'&').slice(0, 30) + (prefillTitle.length > 30 ? '…' : '');
+  const modal = document.getElementById('news-add-modal');
+  modal.style.display = 'flex';
+  setTimeout(() => document.getElementById('nm-kanji').focus(), 100);
+}
+
+function closeNewsModal() {
+  document.getElementById('news-add-modal').style.display = 'none';
+}
+
+function saveNewsWord() {
+  const kanji = document.getElementById('nm-kanji').value.trim();
+  const hira = document.getElementById('nm-hira').value.trim();
+  const meaning = document.getElementById('nm-meaning').value.trim();
+  const example = document.getElementById('nm-example').value.trim();
+  if (!kanji || !meaning) { showToast('請輸入漢字和中文意思'); return; }
+  state.words.push({ id: state.nextId++, kanji, hira, meaning, example, srs:0, nextReview:0, correct:0, total:0 });
+  saveState();
+  closeNewsModal();
+  showToast('✓ 已加入單字庫！');
+}
+
+document.getElementById('news-add-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeNewsModal();
+});
+
+// ─── REMINDER / NOTIFICATIONS ────────────────────────
+function initReminderUI() {
+  if (!('Notification' in window)) {
+    document.getElementById('notif-main').innerHTML =
+      '<div style="font-size:13px;color:var(--text2);text-align:center;padding:8px 0">您的瀏覽器不支援通知功能</div>';
+    return;
+  }
+  if (Notification.permission === 'denied') {
+    document.getElementById('notif-blocked').style.display = 'block';
+    document.getElementById('notif-main').style.display = 'none';
+    return;
+  }
+  const enabled = state.reminderEnabled;
+  const time = state.reminderTime || '08:00';
+  document.getElementById('reminder-time').value = time;
+  updateReminderToggleUI(enabled);
+}
+
+function updateReminderToggleUI(enabled) {
+  const btn = document.getElementById('notif-toggle');
+  const timeRow = document.getElementById('notif-time-row');
+  const statusText = document.getElementById('notif-status-text');
+  if (enabled) {
+    btn.textContent = '關閉提醒';
+    btn.style.background = 'rgba(155,142,247,0.2)';
+    btn.style.borderColor = 'var(--accent2)';
+    btn.style.color = 'var(--accent2)';
+    timeRow.style.display = 'block';
+    statusText.textContent = '每天 ' + formatTime(state.reminderTime || '08:00') + ' 提醒你複習';
+    statusText.style.color = 'var(--accent3)';
+  } else {
+    btn.textContent = '開啟提醒';
+    btn.style.background = 'var(--surface2)';
+    btn.style.borderColor = 'var(--border)';
+    btn.style.color = 'var(--text2)';
+    timeRow.style.display = 'none';
+    statusText.textContent = '尚未開啟';
+    statusText.style.color = 'var(--text2)';
+  }
+}
+
+function formatTime(t) {
+  const [h, m] = t.split(':').map(Number);
+  const period = h < 12 ? '上午' : '下午';
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${period} ${h12}:${String(m).padStart(2,'0')}`;
+}
+
+async function toggleReminder() {
+  if (state.reminderEnabled) {
+    state.reminderEnabled = false;
+    clearReminderAlarm();
+    saveState();
+    updateReminderToggleUI(false);
+    showToast('已關閉每日提醒');
+    return;
+  }
+  if (Notification.permission === 'default') {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') {
+      if (perm === 'denied') {
+        document.getElementById('notif-blocked').style.display = 'block';
+        document.getElementById('notif-main').style.display = 'none';
+      } else {
+        showToast('請允許通知權限才能開啟提醒');
+      }
+      return;
+    }
+  }
+  if (Notification.permission !== 'granted') {
+    showToast('通知權限未開啟');
+    return;
+  }
+  state.reminderEnabled = true;
+  state.reminderTime = state.reminderTime || '08:00';
+  saveState();
+  scheduleReminder();
+  updateReminderToggleUI(true);
+  showToast('✓ 每日提醒已開啟！');
+}
+
+function updateReminderTime() {
+  const t = document.getElementById('reminder-time').value;
+  state.reminderTime = t;
+  saveState();
+  if (state.reminderEnabled) {
+    clearReminderAlarm();
+    scheduleReminder();
+    document.getElementById('notif-status-text').textContent = '每天 ' + formatTime(t) + ' 提醒你複習';
+    showToast('✓ 提醒時間已更新為 ' + formatTime(t));
+  }
+}
+
+function setQuickTime(t) {
+  document.getElementById('reminder-time').value = t;
+  updateReminderTime();
+}
+
+let reminderTimer = null;
+function scheduleReminder() {
+  clearReminderAlarm();
+  const [h, m] = (state.reminderTime || '08:00').split(':').map(Number);
+  const now = new Date();
+  const target = new Date();
+  target.setHours(h, m, 0, 0);
+  if (target <= now) target.setDate(target.getDate() + 1);
+  const ms = target - now;
+  reminderTimer = setTimeout(() => {
+    fireReminder();
+    reminderTimer = setInterval(fireReminder, 86400000);
+  }, ms);
+}
+
+function clearReminderAlarm() {
+  if (reminderTimer) { clearTimeout(reminderTimer); clearInterval(reminderTimer); reminderTimer = null; }
+}
+
+function fireReminder() {
+  if (Notification.permission !== 'granted') return;
+  const due = getDueWords().length;
+  const n = new Notification('🇯🇵 日文單字複習時間到！', {
+    body: due > 0 ? `你有 ${due} 個單字等待複習，加油！` : '今天繼續保持學習習慣！',
+    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="%239b8ef7"/><text x="32" y="46" font-size="36" text-anchor="middle" font-family="serif">日</text></svg>',
+    badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="%239b8ef7"/></svg>',
+  });
+  n.onclick = () => { window.focus(); n.close(); };
+}
+
+function testNotification() {
+  if (Notification.permission !== 'granted') { showToast('請先開啟提醒'); return; }
+  new Notification('🇯🇵 測試通知', {
+    body: '提醒功能正常！每天固定時間會提醒你複習單字。',
+  });
+  showToast('✓ 測試通知已發送');
+}
+
+// ─── UTILS ────────────────────────────────────────────
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── INSTALL PROMPT ───────────────────────────────────
+function detectDevice() {
+  const ua = navigator.userAgent;
+  if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) return 'ios';
+  if (/Android/.test(ua)) return 'android';
+  return 'desktop';
+}
+
+function isStandalone() {
+  return window.navigator.standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches;
+}
+
+function showInstallPrompt() {
+  if (isStandalone()) return; // 已經是 App 模式，不顯示
+  if (localStorage.getItem('install_shown')) return; // 已經顯示過
+  
+  const device = detectDevice();
+  if (device === 'desktop') return; // 桌機不顯示
+
+  const modal = document.getElementById('install-modal');
+  const body = document.getElementById('install-body');
+  const steps = document.getElementById('install-steps');
+  const title = document.getElementById('install-title');
+
+  if (device === 'ios') {
+    title.textContent = '加入 iPhone 主畫面';
+    body.textContent = '把這個 App 加到主畫面，就能像原生 App 一樣使用，單字和學習紀錄也會安全儲存在手機裡！';
+    steps.innerHTML = `① 點下方
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin:0 2px;color:var(--accent2)">
+        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+        <polyline points="16 6 12 2 8 6"/>
+        <line x1="12" y1="2" x2="12" y2="15"/>
+      </svg>
+      <strong>分享按鈕</strong><br>
+      ② 上滑或點「<strong>檢視更多內容</strong>」顯示完整選項<br>
+      ③ 選擇「<strong>加入主畫面</strong>」→ 按「<strong>加入</strong>」`;
+  } else {
+    title.textContent = '安裝到 Android 主畫面';
+    body.textContent = '把這個 App 安裝到主畫面，就能像原生 App 一樣使用，單字和學習紀錄也會安全儲存在手機裡！';
+    steps.innerHTML = '① 點瀏覽器右上角 <strong>⋮ 選單</strong><br>② 選擇「<strong>新增至主畫面</strong>」或「<strong>安裝應用程式</strong>」<br>③ 按「<strong>新增</strong>」完成';
+  }
+
+  modal.style.display = 'flex';
+}
+
+function closeInstallModal() {
+  document.getElementById('install-modal').style.display = 'none';
+  localStorage.setItem('install_shown', '1');
+}
+
+// ─── RESET ────────────────────────────────────────────
+function resetToDefault() {
+  if (!confirm('確定要重置嗎？所有學習進度和自訂單字都會清除，載入預設的 336 個單字。')) return;
+  try { localStorage.removeItem('jvocab_v5'); } catch(e) {}
+  state = {
+    words: DEFAULT_WORDS.map(w => ({...w})),
+    streak: 0,
+    lastStudyDate: '',
+    dailyLog: {},
+    quizStats: { correct: 0, total: 0 },
+    nextId: 347,
+    newsNotes: {},
+  };
+  saveState();
+  showToast('✓ 已重置為預設 336 個單字！');
+  initFlash();
+  renderWordList();
+  renderProgress();
+}
+
+// ─── THEME ────────────────────────────────────────────
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light');
+  document.getElementById('theme-toggle').textContent = isLight ? '☀️' : '🌙';
+  try { localStorage.setItem('jvocab_theme', isLight ? 'light' : 'dark'); } catch(e) {}
+}
+function applyTheme() {
+  const saved = localStorage.getItem('jvocab_theme');
+  if (saved === 'light') {
+    document.documentElement.classList.add('light');
+    document.getElementById('theme-toggle').textContent = '☀️';
+  }
+}
+
+// ─── INIT ─────────────────────────────────────────────
+applyTheme();
+checkStreak();
+updateStreakBadge();
+initFlash();
+if (window.speechSynthesis) speechSynthesis.getVoices();
+if (state.reminderEnabled && Notification.permission === 'granted') scheduleReminder();
+setTimeout(showInstallPrompt, 1500);
+
+function startApp() {
+  const splash = document.getElementById('splash');
+  const app = document.getElementById('main-app');
+  splash.classList.add('hide');
+  app.style.opacity = '1';
+  setTimeout(() => { splash.style.display = 'none'; }, 650);
+}
+
+setTimeout(startApp, 2000);
+</script>
+</body>
+</html>
