@@ -371,6 +371,34 @@ nav {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
 
+/* Goal animation */
+@keyframes goalFadeIn { from { opacity:0; transform:scale(0.7); } to { opacity:1; transform:scale(1); } }
+@keyframes goalFadeOut { from { opacity:1; transform:scale(1); } to { opacity:0; transform:scale(1.1); } }
+@keyframes firePulse { 0%,100% { transform: scale(1) rotate(-3deg); } 50% { transform: scale(1.2) rotate(3deg); } }
+@keyframes sparkle { 0% { opacity:1; transform: translate(0,0) scale(1); } 100% { opacity:0; transform: translate(var(--tx), var(--ty)) scale(0); } }
+.goal-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  animation: goalFadeIn 0.4s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+.goal-overlay.out { animation: goalFadeOut 0.3s ease forwards; }
+.goal-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px; padding: 36px 32px;
+  text-align: center; width: 280px;
+  position: relative; overflow: visible;
+}
+.goal-fire { font-size: 64px; display: block; margin-bottom: 12px; animation: firePulse 0.6s ease infinite; }
+.goal-title { font-size: 22px; font-weight: 700; color: var(--accent); margin-bottom: 6px; }
+.goal-sub { font-size: 14px; color: var(--text2); margin-bottom: 4px; }
+.goal-streak { font-size: 28px; font-weight: 700; color: var(--accent2); }
+.sparkle {
+  position: absolute; width: 8px; height: 8px; border-radius: 50%;
+  animation: sparkle 0.8s ease forwards;
+}
+
 /* SPLASH SCREEN */
 #splash {
   position: fixed; inset: 0; z-index: 9999;
@@ -599,9 +627,22 @@ nav {
       </div>
       <p style="font-size:12px;color:var(--text3);margin-bottom:10px">閱讀全文 → 填入翻譯筆記 → 挑出想記的單字</p>
 
-      <div class="mode-toggle" style="margin-bottom:14px">
+      <div class="mode-toggle" style="margin-bottom:8px">
         <button class="mode-btn active" id="news-mode-easy" onclick="setNewsLevel('easy')">🟢 簡單 — やさしい日本語</button>
         <button class="mode-btn" id="news-mode-hard" onclick="setNewsLevel('hard')">🔴 進階 — NHK Web</button>
+      </div>
+
+      <div style="display:flex; align-items:center; justify-content:flex-end; margin-bottom:12px; gap:8px">
+        <span style="font-size:12px; color:var(--text2)">隱藏已翻譯</span>
+        <button id="hide-translated-btn" onclick="toggleHideTranslated()" style="
+          width:40px; height:22px; border-radius:11px; border:none; cursor:pointer;
+          background:var(--surface3); position:relative; transition:background 0.2s;
+        ">
+          <span id="hide-translated-dot" style="
+            position:absolute; top:3px; left:3px; width:16px; height:16px;
+            border-radius:50%; background:#fff; transition:left 0.2s;
+          "></span>
+        </button>
       </div>
 
       <div id="news-loading" style="text-align:center;padding:40px 0;color:var(--text3);font-size:14px">載入新聞中…</div>
@@ -761,6 +802,11 @@ nav {
         <div style="font-size:11px; color:var(--text3); margin-top:8px; line-height:1.6; padding:0 2px">
           ⚠️ 瀏覽器通知需要網頁保持開啟或在背景執行。若要在手機上使用，建議將網頁加入主畫面（加到主屏幕）。
         </div>
+      </div>
+
+      <div class="prog-section">
+        <h3>翻譯筆記回顧</h3>
+        <div id="pr-notes-list"></div>
       </div>
 
       <div class="prog-section">
@@ -1166,6 +1212,7 @@ function loadState() {
     words: DEFAULT_WORDS.map(w => ({...w})),
     streak: 0,
     lastStudyDate: '',
+    lastGoalDate: '',
     dailyLog: {},
     quizStats: { correct: 0, total: 0 },
     nextId: 347,
@@ -1178,24 +1225,75 @@ function saveState() {
 let state = loadState();
 
 // ─── STREAK ──────────────────────────────────────────
+const DAILY_GOAL = 10;
+
 function checkStreak() {
   const today = new Date().toDateString();
   const yesterday = new Date(Date.now() - 86400000).toDateString();
-  if (state.lastStudyDate === today) return;
-  if (state.lastStudyDate === yesterday) {
-    state.streak++;
-  } else if (state.lastStudyDate !== today) {
-    if (state.lastStudyDate !== yesterday) state.streak = 1;
+  const todayCount = state.dailyLog[today] || 0;
+
+  if (state.lastGoalDate === today) return;
+
+  if (todayCount >= DAILY_GOAL) {
+    if (state.lastGoalDate === yesterday) {
+      state.streak++;
+    } else {
+      state.streak = 1;
+    }
+    state.lastGoalDate = today;
+    saveState();
+    updateStreakBadge();
+    showGoalAnimation();
   }
-  state.lastStudyDate = today;
-  saveState();
 }
+
+function showGoalAnimation() {
+  const overlay = document.createElement('div');
+  overlay.className = 'goal-overlay';
+  overlay.innerHTML = `
+    <div class="goal-box" id="goal-box">
+      <span class="goal-fire">🔥</span>
+      <div class="goal-title">今日目標達成！</div>
+      <div class="goal-sub">連續學習</div>
+      <div class="goal-streak">${state.streak} 天</div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  // 產生閃爍粒子
+  const box = overlay.querySelector('#goal-box');
+  const colors = ['#9b8ef7','#e8a87c','#6de8c4','#f76e6e'];
+  for (let i = 0; i < 16; i++) {
+    const s = document.createElement('div');
+    s.className = 'sparkle';
+    const angle = (i / 16) * 360;
+    const dist = 80 + Math.random() * 60;
+    const tx = Math.cos(angle * Math.PI/180) * dist + 'px';
+    const ty = Math.sin(angle * Math.PI/180) * dist + 'px';
+    s.style.cssText = `
+      left: ${40 + Math.random()*120}px;
+      top: ${40 + Math.random()*80}px;
+      background: ${colors[i % colors.length]};
+      --tx: ${tx}; --ty: ${ty};
+      animation-delay: ${Math.random()*0.3}s;
+    `;
+    box.appendChild(s);
+  }
+
+  // 點擊或 2.5 秒後關閉
+  const close = () => {
+    overlay.classList.add('out');
+    setTimeout(() => overlay.remove(), 300);
+  };
+  overlay.addEventListener('click', close);
+  setTimeout(close, 2500);
+}
+
 function markStudyToday() {
   const today = new Date().toDateString();
   state.dailyLog[today] = (state.dailyLog[today] || 0) + 1;
   state.lastStudyDate = today;
-  if (!state.streakChecked) { checkStreak(); state.streakChecked = true; }
   saveState();
+  checkStreak();
   updateStreakBadge();
 }
 function updateStreakBadge() {
@@ -1240,21 +1338,28 @@ function switchTab(tab) {
 
 // ─── FLASHCARD ────────────────────────────────────────
 let fcQueue = [], fcIdx = 0, fcFlipped = false;
-let fcMode = 'jp'; // 'jp' = 日文正面, 'zh' = 中文正面
+let fcMode = 'jp';
+let fcQueueJp = [], fcQueueZh = []; // 兩個模式各自的隊列
 
 function setCardMode(mode) {
   fcMode = mode;
   document.getElementById('mode-jp').classList.toggle('active', mode === 'jp');
   document.getElementById('mode-zh').classList.toggle('active', mode === 'zh');
-  // restart with same queue, just flip display
+  fcQueue = mode === 'jp' ? fcQueueJp : fcQueueZh;
   fcIdx = 0; fcFlipped = false;
   showCard();
 }
 
 function initFlash() {
-  fcQueue = getDueWords();
-  if (fcQueue.length === 0) fcQueue = [...state.words];
-  fcQueue = shuffle([...fcQueue]);
+  const due = getDueWords();
+  const pool = due.length > 0 ? due : [...state.words];
+  fcQueueJp = shuffle([...pool]);
+  fcQueueZh = shuffle([...pool]);
+  // 確保兩個隊列第一張不同
+  if (fcQueueZh.length > 1 && fcQueueZh[0].id === fcQueueJp[0].id) {
+    [fcQueueZh[0], fcQueueZh[1]] = [fcQueueZh[1], fcQueueZh[0]];
+  }
+  fcQueue = fcMode === 'jp' ? fcQueueJp : fcQueueZh;
   fcIdx = 0; fcFlipped = false;
   updateFCStats();
   showCard();
@@ -1599,6 +1704,25 @@ function renderProgress() {
   document.getElementById('goal-fill').style.width = Math.min(todayCount/goal*100, 100) + '%';
 
   initReminderUI();
+
+  // 翻譯筆記回顧
+  const notesList = document.getElementById('pr-notes-list');
+  const notes = state.newsNotes || {};
+  const noteEntries = Object.entries(notes).filter(([k, v]) => v && v.trim() !== '');
+  if (noteEntries.length === 0) {
+    notesList.innerHTML = '<div style="font-size:13px;color:var(--text3);text-align:center;padding:16px 0">還沒有翻譯筆記，去進階練習寫下你的翻譯吧！</div>';
+  } else {
+    notesList.innerHTML = noteEntries.map(([key, val]) => {
+      const level = key.includes('easy') ? '🟢 簡單' : '🔴 進階';
+      return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:11px;color:var(--accent2)">${level}</span>
+          <button onclick="deleteNote('${key}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px">×</button>
+        </div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.7;white-space:pre-wrap">${val}</div>
+      </div>`;
+    }).join('');
+  }
 }
 
 // ─── AUDIO ────────────────────────────────────────────
@@ -1618,6 +1742,32 @@ function speakWord(e) {
 let newsLoaded = false;
 let newsLevel = 'easy'; // 'easy' = やさしい日本語, 'hard' = NHK Web
 let currentSpeech = null;
+let hideTranslated = false;
+
+function toggleHideTranslated() {
+  hideTranslated = !hideTranslated;
+  const btn = document.getElementById('hide-translated-btn');
+  const dot = document.getElementById('hide-translated-dot');
+  btn.style.background = hideTranslated ? 'var(--accent2)' : 'var(--surface3)';
+  dot.style.left = hideTranslated ? '21px' : '3px';
+  renderNewsList();
+}
+
+function renderNewsList() {
+  const list = document.getElementById('news-list');
+  if (!list._newsItems) return;
+  const items = list._newsItems;
+  const filtered = hideTranslated ? items.filter(item => {
+    const noteKey = 'news_note_' + newsLevel + '_' + item.i;
+    const note = state.newsNotes && state.newsNotes[noteKey];
+    return !note || note.trim() === '';
+  }) : items;
+  if (filtered.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3);font-size:14px">✓ 所有新聞都已翻譯完成！</div>';
+    return;
+  }
+  list.innerHTML = filtered.map(item => item.html).join('');
+}
 
 const NEWS_SOURCES = {
   easy: {
@@ -1710,24 +1860,28 @@ async function loadNews() {
     loading.style.display = 'none';
     newsLoaded = true;
 
-    list.innerHTML = items.map((item, i) => {
+    const newsItems = items.map((item, i) => {
       const title = item.querySelector('title')?.textContent || '';
       const desc = item.querySelector('description')?.textContent?.replace(/<[^>]*>/g,'').trim() || '';
-      // 進階模式連結指向 NHK Web
       const articleLink = newsLevel === 'hard' ? src.link : (item.querySelector('link')?.textContent || src.fallbackLink);
       const pubDate = item.querySelector('pubDate')?.textContent || '';
       const date = pubDate ? new Date(pubDate).toLocaleDateString('zh-TW', { month:'numeric', day:'numeric', weekday:'short' }) : '';
-      return newsCardHTML(i, title, desc, date, articleLink, src.tag);
-    }).join('');
+      return { i, html: newsCardHTML(i, title, desc, date, articleLink, src.tag) };
+    });
+    list._newsItems = newsItems;
+    loading.style.display = 'none';
+    renderNewsList();
 
   } catch(e) {
     loading.style.display = 'none';
-    list.innerHTML = renderNewsFallback();
+    const fallbackItems = renderNewsFallbackItems();
+    list._newsItems = fallbackItems;
+    renderNewsList();
     newsLoaded = true;
   }
 }
 
-function renderNewsFallback() {
+function renderNewsFallbackItems() {
   if (!state.newsNotes) state.newsNotes = {};
   const src = NEWS_SOURCES[newsLevel];
   const samples = newsLevel === 'easy' ? [
@@ -1739,8 +1893,7 @@ function renderNewsFallback() {
     { title: '日本銀行が金融政策を維持', body: '日本銀行は金融政策決定会合を開き、現行の金融緩和政策を維持することを決定した。国内外の経済動向を注視しながら、適切な政策運営を続けるとしている。' },
     { title: '国内の観光業が回復傾向', body: '観光庁によると、国内旅行者数が昨年比で大幅に増加しており、コロナ禍前の水準に近づいていることが分かった。インバウンド需要も堅調に推移している。' },
   ];
-  return `<div style="padding:8px 0 12px;font-size:12px;color:var(--accent);text-align:center">⚠️ 無法載入即時新聞，顯示練習例文</div>` +
-    samples.map((s, i) => newsCardHTML('f'+i, s.title, s.body, '今日', src.fallbackLink, src.tag)).join('');
+  return samples.map((s, i) => ({ i: 'f'+i, html: newsCardHTML('f'+i, s.title, s.body, '今日', src.fallbackLink, src.tag) }));
 }
 
 function speakNewsBtn(btn) {
@@ -1780,6 +1933,7 @@ function saveNewsNote(key, val) {
   if (!state.newsNotes) state.newsNotes = {};
   state.newsNotes['news_note_' + key] = val;
   saveState();
+  if (hideTranslated) renderNewsList();
 }
 
 function escHtml(s) {
@@ -2017,6 +2171,13 @@ function showInstallPrompt() {
 function closeInstallModal() {
   document.getElementById('install-modal').style.display = 'none';
   localStorage.setItem('install_shown', '1');
+}
+
+function deleteNote(key) {
+  if (!confirm('確定要刪除這則翻譯筆記嗎？')) return;
+  delete state.newsNotes[key];
+  saveState();
+  renderProgress();
 }
 
 // ─── RESET ────────────────────────────────────────────
